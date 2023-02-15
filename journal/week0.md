@@ -12,6 +12,7 @@ In order to prove that I am able to use the AWS CLI...
 
 ### Recreate Conceptual Architectural Deisgn - Napkin
 
-![Cruddur Conceptual Design](assets/conceptual-napkin-architecture-recreation-diagram.png)
+![Cruddur Conceptual Design](assets/conceptual-napkin-architecture-recreation-diag.png)
 
 [Lucid Charts Share Link]
+ 
