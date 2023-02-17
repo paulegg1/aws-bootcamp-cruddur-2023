@@ -13,9 +13,11 @@ I've also previously used the AWS CLI, but now I needed to get this working in t
 
 I've used the environment variables in GP to store my AWS credentials and configured GP env to remember them across relaunch.
 
+
 ### Billing Alarms 
 
 I have enabled the billing alert preferences in Billing -> Billing Preferences
+
 
 ### SNS Topic Creation
 
@@ -24,6 +26,7 @@ I completed this, straightforwardly in the AWS CLI while using my GP workspace:
 ```sh
 aws sns create-topic --name billing-alarm
 ```
+
 Here's the image:
 
 ![AWS CLI in GitPod](assets/create-sns-topic-01.png)
@@ -37,6 +40,7 @@ aws sns subscribe \
     --protocol email \
     --notification-endpoint myname@myemail.com
 ```
+
 
 Here's the image:
 
@@ -52,11 +56,21 @@ The creation of a cloudwatch alarm was also succesful, this is something I've co
 ![AWS CLI in GitPod](assets/create-billing-alarm-01.png)
 
 
+
 ### AWS Budgets
 
 Next, the creation of a budget using the AWS CLI.  
 
 ![AWS CLI in GitPod](assets/create-budget-01.png)
+
+
+### AWS Cloudshell
+
+Cloudshell is a great tool.  All you need is your usual AWS console login into a web browser can you can launch Cloudshell right into the browser.  It runs as a fully fledged shell with 1gb of local home space.  The AWS CLI tools are ready to go and you assume a role based on your currently logged in user, here's an example of the shell running (note I've obscured the output details of the account ID and access key name).
+
+![AWS CLI in GitPod](assets/cloud-shell-01.png)
+
+
 
 ### Recreate Conceptual Architectural Design - Napkin
 
