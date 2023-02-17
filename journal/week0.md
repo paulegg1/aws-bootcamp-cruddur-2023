@@ -44,10 +44,19 @@ Here's the image:
 
 I confirmed this in my email.
 
+
+### Cloudwatch Alarm
+
 The creation of a cloudwatch alarm was also succesful, this is something I've completed in the past, but only by using the console, not via the AWS CLI:
 
 ![AWS CLI in GitPod](assets/create-billing-alarm-01.png)
 
+
+### AWS Budgets
+
+Next, the creation of a budget using the AWS CLI.  
+
+![AWS CLI in GitPod](assets/create-budget-01.png)
 
 ### Recreate Conceptual Architectural Design - Napkin
 
