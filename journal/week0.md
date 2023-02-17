@@ -24,7 +24,7 @@ I completed this, straightforwardly in the AWS CLI while using my GP workspace:
 ```sh
 aws sns create-topic --name billing-alarm
 ```
-
+Here's the image:
 
 ![AWS CLI in GitPod](assets/create-sns-topic-01.png)
 
@@ -38,9 +38,12 @@ aws sns subscribe \
     --notification-endpoint myname@myemail.com
 ```
 
+Here's the image:
+
 ![AWS CLI in GitPod](assets/create-sns-topic-02.png)
 
 I confirmed this in my email.
+
 
 ### Recreate Conceptual Architectural Design - Napkin
 
