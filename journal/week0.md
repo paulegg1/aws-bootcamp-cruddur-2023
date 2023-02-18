@@ -79,7 +79,7 @@ Cloudshell is a great tool.  All you need is your usual AWS console login into a
 
 ### Recreate Logcal Architectural Diagram - Lucid
 
-![Cruddur Logical Design](assets/Cruddur-Logical-Diagram.png)
+![Cruddur Logical Design](assets/Cruddur-Logical-Diagram2.png)
 
 [Lucid Charts Share Link](https://lucid.app/lucidchart/431475ba-5e01-4738-8b24-c06acb84100c/edit?viewport_loc=-282%2C-86%2C2408%2C1592%2C0_0&invitationId=inv_2df85908-1a39-4f63-8b20-ae36742f2ed1)
  
