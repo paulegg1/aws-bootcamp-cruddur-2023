@@ -207,6 +207,43 @@ networks:
     
 ```
 
-The extension in VScode should mean that the docker-compose.yml file is recognised in your VScode file explorer.  You should be able to right-click the file and be given an option for 'Compose up'.  Alternatively, you can use the docker commandline:
+The extension in VScode should mean that the docker-compose.yml file is recognised in your VScode file explorer.  You should be able to right-click the file and be given an option for 'Compose up'.  Clicking this will build and launch both containers in a single click.  Alternatively, you can use the docker commandline:
 
+```sh
+cd $GITPOD_REPO_ROOT
+docker compose up
+```
+
+##  Notifications TBD
+
+
+
+
+
+### Other Challenges
+
+## Run the dockerfile CMD as external script
+
+I was a little unsure about this on first reading, but I think the task here is to investigate and run the CMD as a script, the "shell form" rather than using the "exec" form.
+
+I did this by adding a simple one line script to the root of the flask app/container in the repo and then calling this script from the Dockerfile.  The script simply contains:
+
+```sh
+python3 -m flask run --host=0.0.0.0 --port=4567
+```
+
+But clearly could be more complex and contain other tasks.
+
+The Dockerfile becomes (old CMS commented out), this is just the final few lines, showing the only change.
+
+```dockerfile
+...
+
+EXPOSE ${PORT}
+# python3 -m flask run --host=0.0.0.0 --port=4567
+#CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=4567"]
+COPY runflask.sh runflask.sh
+CMD sh runflask.sh
+...
+```
 
