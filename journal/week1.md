@@ -226,7 +226,7 @@ docker compose up
 
 I was a little unsure about this on first reading, but I think the task here is to investigate and run the CMD as a script, the "shell form" rather than using the "exec" form.
 
-I did this by adding a simple one line script to the root of the flask app/container in the repo and then calling this script from the Dockerfile.  The script simply contains:
+I did this by adding a simple one line script to the root of the flask app/container in the repo and then calling this script from the Dockerfile.  The script was called runflask.sh and simply contains:
 
 ```sh
 python3 -m flask run --host=0.0.0.0 --port=4567
@@ -238,7 +238,6 @@ The Dockerfile becomes (old CMS commented out), this is just the final few lines
 
 ```dockerfile
 ...
-
 EXPOSE ${PORT}
 # python3 -m flask run --host=0.0.0.0 --port=4567
 #CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=4567"]
@@ -247,3 +246,4 @@ CMD sh runflask.sh
 ...
 ```
 
+I have changed the dockerfile back to the exec form now but left both the alternative commented out.
