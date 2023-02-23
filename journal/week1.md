@@ -159,7 +159,7 @@ docker build -t frontend-react-js ./frontend-react-js
 
 The container will now show up in the Docker extension of VSCode, alongside the new base layer, node.
 
-![Node container built](assets/frontend-node-01.png)
+![Node container built](assets/front-end-node-01.png)
 
 ### Run FE Container
 
