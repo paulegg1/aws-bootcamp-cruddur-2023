@@ -220,7 +220,7 @@ docker compose up
 
 
 
-### Other Challenges
+# Other Challenges
 
 ## Run the dockerfile CMD as external script
 
