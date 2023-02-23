@@ -175,7 +175,7 @@ Again, check the ports tab to ensure the new frontend port (3000) is unlocked an
 
 With more than one container in an application, it is very useful to orchestrate their launch and control.  This is done with Docker Compose.
 
-I created a docker-compose.yml file which needs to sit at the root of the project.
+I created a docker-compose.yml file which needs to sit at the root of the project.   Note that I had a problem with the npm install seeming not to work once the container was launched, which prevented the front end from launching through docker compose.  I had a quick fix of running 'npm i' as per the build steps, but this should have been covered by the npm install tasks in the docker file.  It turned out I needed to mount an additional volume (- /frontend-react-js/node_modules). This is included in the compose file below.
 
 ```yaml
 version: "3.8"
@@ -197,6 +197,7 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend-react-js:/frontend-react-js
+      - /frontend-react-js/node_modules
 
 # the name flag is a hack to change the default prepend folder
 # name when outputting the image names
