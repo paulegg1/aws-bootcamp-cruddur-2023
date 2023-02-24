@@ -218,8 +218,78 @@ docker compose up
 ##  Notifications TBD
 
 
+## PostGres and DynamoDB
 
+It is necessary to get Postgres and DynamoDB working because they will be needed for future stages where we use persistent storage with Cruddur.  This is done now, during the docker container build stages so that the containers needed to run the development environment are all ready and complete.  The steps involve adding two new container builds to the docker-compose.yml file. The additions are shown below.
 
+### DynamoDB changes to docker-compose.yml
+
+```dockerfile
+  dynamodb-local:
+    # https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
+    # We needed to add user:root to get this working.
+    user: root
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+```
+
+### Postgres changes to docker-compose.yml
+
+```dockerfile
+  db:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - '5432:5432'
+    volumes: 
+      - db:/var/lib/postgresql/data
+```
+
+### Other items - volumes
+
+I also added the required volumes local to specify that the volumes are local to the docker host.
+
+```dockerfile
+volumes:
+  db:
+    driver: local
+```
+
+I also added the psql client to the gitpod.yml file, this ensure it is installed on the launch of the gitpod environment.  Note also I've added an npm install.  Not strictly required because the docker build installs this inside the FE container, but it is useful to have it on the gitpod workspace environment too.
+
+```yaml
+  - name: npm-install
+    init: |
+      cd /workspace/aws-bootcamp-cruddur-2023/frontend-react-js
+      npm i
+      exit
+  - name: postgres
+    init: |
+      curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+      echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+      sudo apt update
+      sudo apt install -y postgresql-client-13 libpq-dev
+```
+
+Once these items are in the place, the two new docker containers succesfully launch, you will find you now have 4 containers on a complete 'docker compose up',
+
+```sh
+gitpod /workspace/aws-bootcamp-cruddur-2023 (week-1) $ docker ps
+CONTAINER ID   IMAGE                                         COMMAND                  CREATED          STATUS          PORTS                                       NAMES
+3d4be41ab3bf   aws-bootcamp-cruddur-2023-backend-flask       "python3 -m flask ru…"   19 minutes ago   Up 19 minutes   0.0.0.0:4567->4567/tcp, :::4567->4567/tcp   aws-bootcamp-cruddur-2023-backend-flask-1
+cc51920cb0a0   aws-bootcamp-cruddur-2023-frontend-react-js   "docker-entrypoint.s…"   19 minutes ago   Up 19 minutes   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   aws-bootcamp-cruddur-2023-frontend-react-js-1
+dba93d8ce24e   postgres:13-alpine                            "docker-entrypoint.s…"   19 minutes ago   Up 19 minutes   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   aws-bootcamp-cruddur-2023-db-1
+34f42429e7a4   amazon/dynamodb-local:latest                  "java -jar DynamoDBL…"   19 minutes ago   Up 19 minutes   0.0.0.0:8000->8000/tcp, :::8000->8000/tcp   dynamodb-local
+```
 
 # Other Challenges
 
