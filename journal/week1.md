@@ -393,3 +393,39 @@ The backend could be successfully run:
 ![docker multi stage imags](assets/docker-multi-stage-run.png)
 
 I want to keep my repo and progress clean and easy to troubleshoot, so for now, this experiment will be kept only in Dockerfile.multi as a backup in the backend-flask folder.
+
+## Create a dockerhub repo and push images
+
+For this challenge, I started with a terraform build of an ec2 instance because I wanted the build to be easily repeatable.  I wanted to ensure I could destroy the entire environment with a single 'terraform destroy' and then build it again with 'plan/apply'.  This way I could build and test and then destroy without generating any additional cost.  The ec2 instance would be within the free tier and would only exist for the time I needed it in order to test.  The 'user_data' script for the ec2 instance is responsible for installing docker and pulling down the images.  The terraform code also creates an elastic IP to assoiciate with the instance and ensures that the VM is secured with a security group (also created with terraform).  
+
+Here is a snippet of the terraform to create the vm:
+
+```terraform
+resource "aws_instance" "vm" {
+    ami           = data.aws_ami.amazon2.id
+    instance_type = "t3.micro"
+
+    key_name = data.aws_key_pair.key.key_name
+    subnet_id = data.aws_subnet.vpn_subnet.id
+    vpc_security_group_ids = [aws_security_group.ssh-allowed.id]
+
+    user_data = <<-EOF
+      #!/bin/bash
+      set -ex
+      sudo yum update -y
+      sudo amazon-linux-extras install docker -y
+      sudo service docker start
+      sudo docker pull paulegg/cruddur_bootcamp:frontend.week1.v1
+      sudo docker pull paulegg/cruddur_bootcamp:backend.week1.v1
+    EOF
+
+
+    tags  = {
+       "Name" = "cruddur ec2 and docker 01"
+    }
+}
+```
+
+I need to fully document this, but it works a treat, here is a snapshot of the working app within an ec2 instance:
+
+![cruddur running in ec2](assets/docker-ec2-01.png)
