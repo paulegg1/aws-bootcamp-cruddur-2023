@@ -275,16 +275,25 @@ class NotificationsActivities:
 The new service object for notifications needed to be imported, line 7 in app.py:
 
 ```diff
-+  from services.notifications_activities import *
+  from services.home_activities import *
++ from services.notifications_activities import *
+  from services.user_activities import *
 ```
 
 In addtion, the app routing needed to be added to map the entry point url (with HTTP GET) to the notifications service.
 
+Line 69
+
 ```python
-@app.route("/api/activities/notifications", methods=['GET'])
-def data_notifications():
-  data = NotificationsActivities.run()
-  return data, 200
+    return data, 200
+
++ @app.route("/api/activities/notifications", methods=['GET'])
++ def data_notifications():
++  data = NotificationsActivities.run()
++  return data, 200
++
+  @app.route("/api/activities/@<string:handle>", methods=['GET'])
+  def data_handle(handle):
 ```
 
 ### Frontend - App.js
@@ -294,16 +303,24 @@ The required changes to the App.js page were to import the js from a new Notifca
 Here are the changes to App.js.  The full file can be seen in the repo.
 
 Line 4 addition:
-```javascript
-import NotificationsFeedPage from './pages/NotificationsFeedPage';
+```diff
+  import HomeFeedPage from './pages/HomeFeedPage';
++ import NotificationsFeedPage from './pages/NotificationsFeedPage';
+  import UserFeedPage from './pages/UserFeedPage';
 ```
 Lines 24 to 27 addition:
 
-```javascript
- {
-    path: "/notifications",
-    element: <NotificationsFeedPage />
-  },
+```diff
+     path: "/",
+     element: <HomeFeedPage />
+   },
++  {
++    path: "/notifications",
++    element: <NotificationsFeedPage />
++  },
+   {
+     path: "/@:handle",
+     element: <UserFeedPage />
 ```
 
 ### Frontend - NotificationsFeedPage.js
