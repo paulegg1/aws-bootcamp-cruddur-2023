@@ -215,7 +215,123 @@ cd $GITPOD_REPO_ROOT
 docker compose up
 ```
 
-##  Notifications TBD
+##  Notifications 
+
+The notifications functionality was entirely missing from the application.  I successfully added the nofifications to both the back and frontend components of the application and also updated the openapi spec.  
+
+### Backend - create notifications_activities.py
+
+As shown here, the notifications_activites.py was created, it is almost a clone of the home_activities.py file with a few simple changes such as the class name.  I also change some of the message text and uuids so that the differences could be seen on the rendered page:
+
+```python
+from datetime import datetime, timedelta, timezone
+class NotificationsActivities:
+  def run():
+    now = datetime.now(timezone.utc).astimezone()
+    results = [{
+      'uuid': '68f126b0-1ceb-4a33-88be-d90fa7109fff',
+      'handle':  'Bob Notkate',
+      'message': 'Did we get the notification!',
+      'created_at': (now - timedelta(days=2)).isoformat(),
+      'expires_at': (now + timedelta(days=5)).isoformat(),
+      'likes_count': 5,
+      'replies_count': 1,
+      'reposts_count': 0,
+      'replies': [{
+        'uuid': '26e12864-1c26-5c3a-9658-97a10f8fea67',
+        'reply_to_activity_uuid': '68f126b0-1ceb-4a33-88be-d90fa7109fff',
+        'handle':  'Worf',
+        'message': 'This post has no honor!',
+        'likes_count': 0,
+        'replies_count': 0,
+        'reposts_count': 0,
+        'created_at': (now - timedelta(days=2)).isoformat()
+      }],
+    },
+    {
+      'uuid': '66e12864-8c26-4c3a-9658-95a10f8fea67',
+      'handle':  'Worf',
+      'message': 'I am out of prune juice',
+      'created_at': (now - timedelta(days=7)).isoformat(),
+      'expires_at': (now + timedelta(days=9)).isoformat(),
+      'likes': 0,
+      'replies': []
+    },
+    {
+      'uuid': '248959df-3079-4947-b847-9e0892d1bab4',
+      'handle':  'Garek',
+      'message': 'My dear doctor, I am just simple tailor',
+      'created_at': (now - timedelta(hours=1)).isoformat(),
+      'expires_at': (now + timedelta(hours=12)).isoformat(),
+      'likes': 0,
+      'replies': []
+    }
+    ]
+    return results
+```
+
+### Backend - amend app.py
+
+The new service object for notifications needed to be imported, line 7 in app.py:
+
+```python
+from services.notifications_activities import *
+```
+
+In addtion, the app routing needed to be added to map the entry point url (with HTTP GET) to the notifications service.
+
+```python
+@app.route("/api/activities/notifications", methods=['GET'])
+def data_notifications():
+  data = NotificationsActivities.run()
+  return data, 200
+```
+
+### Frontend - App.js
+  
+The required changes to the App.js page were to import the js from a new NotifcationsFeedPage (show further below) and to add the path to the Router (createBrowserRouter).
+
+Here are the changes to App.js.  The full file can be seen in the repo.
+
+Line 4 addition:
+```javascript
+import NotificationsFeedPage from './pages/NotificationsFeedPage';
+```
+Lines 24 to 27 addition:
+
+```javascript
+ {
+    path: "/notifications",
+    element: <NotificationsFeedPage />
+  },
+```
+
+The notifications page is almost the same as the home page. This allowed me to copy the 'src/pages/HomeFeed.js' page to 'src/pages/NotificationsFeed.js'.  I won't show the full file here for brevity, just the changes:
+
+Line 1:
+
+```diff
+import './NotificationsFeedPage.css';
+```
+
+Line 23:
+
+```diff
+    try {
+-      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/home` 
++      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/notifications`
+       const res = await fetch(backend_url, {
+```
+
+Line 60
+
+```diff
+  return (
+    <article>
+-      <DesktopNavigation user={user} active={'home'} setPopped={setPopped} />
++      <DesktopNavigation user={user} active={'notfications'} setPopped={setPopped} />
+       <div className='content'>
+```      
 
 
 ## PostGres and DynamoDB
