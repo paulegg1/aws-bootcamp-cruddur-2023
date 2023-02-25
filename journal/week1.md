@@ -346,6 +346,10 @@ $ docker tag d8b0bd42a1bf paulegg/cruddur_bootcamp:backend.week1.v1
 $ docker push paulegg/cruddur_bootcamp:backend.week1.v1
 ```
 
+## Get Docker running on a local machine
+
+Just a side note to say that I tested the pull from my new docker repo and the multi-stage section below on my local desktop and was able to get our containers running on that machine, outside of GitPod.  I have WSL on a Windows machine here to achieve this.  Some of the screen shots here you see are from that desktop.
+
 ## Investigate multi-stage docker builds
 
 I did some reading on multi-stage docker builds.  There is good documentation at [Docker Multistage](https://docs.docker.com/build/building/multi-stage/).  I only tested this for the backend, but it could of course be extended to the frontend container as well.  For larger and more complex images the space and efficiency savings could be quite large, but for our project I don't think it is really necessary, but it was an education to investigate it! I created a new Dockerfile as shown here:
