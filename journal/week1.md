@@ -274,8 +274,8 @@ class NotificationsActivities:
 
 The new service object for notifications needed to be imported, line 7 in app.py:
 
-```python
-from services.notifications_activities import *
+```diff
++  from services.notifications_activities import *
 ```
 
 In addtion, the app routing needed to be added to map the entry point url (with HTTP GET) to the notifications service.
@@ -306,12 +306,15 @@ Lines 24 to 27 addition:
   },
 ```
 
+### Frontend - NotificationsFeedPage.js
+
 The notifications page is almost the same as the home page. This allowed me to copy the 'src/pages/HomeFeed.js' page to 'src/pages/NotificationsFeed.js'.  I won't show the full file here for brevity, just the changes:
 
 Line 1:
 
 ```diff
-import './NotificationsFeedPage.css';
++  import './NotificationsFeedPage.css';
+-  import React from "react";
 ```
 
 Line 23:
