@@ -348,22 +348,26 @@ $ docker push paulegg/cruddur_bootcamp:backend.week1.v1
 
 ## Investigate multi-stage docker builds
 
-I did some reading on multi-stage docker builds.  There is good documentation at [Docker Multistage](https://docs.docker.com/build/building/multi-stage/).  I only tested this for the backend, but it could of course be extended to the frontend container as well.  For larger images the space and efficiency savings could be quite large.  I created a new Dockerfile as shown here:
+I did some reading on multi-stage docker builds.  There is good documentation at [Docker Multistage](https://docs.docker.com/build/building/multi-stage/).  I only tested this for the backend, but it could of course be extended to the frontend container as well.  For larger and more complex images the space and efficiency savings could be quite large, but for our project I don't think it is really necessary, but it was an education to investigate it! I created a new Dockerfile as shown here:
 
 ```dockerfile
-FROM python:3.10-slim-buster as base
-
-WORKDIR /backend-flask
-
-COPY requirements.txt requirements.txt
-
-RUN pip3 install -r requirements.txt
-
-#2nd stage
 FROM python:3.10-slim-buster
 
-RUN mkdir /backend-flask
-COPY --from=base /backend-flask /backend-flask
+# Create the virtual environment.
+RUN python3 -m venv /venv
+ENV PATH=/venv/bin:$PATH
+
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
+
+FROM python:3.10-slim-buster
+
+# Copy the virtual environment from the first stage.
+COPY --from=0 /venv /venv
+ENV PATH=/venv/bin:$PATH
+
+WORKDIR /backend-flask
+COPY . .
 
 ENV FLASK_ENV=development
 # ENV FRONTEND_URL="*"
@@ -374,10 +378,6 @@ EXPOSE ${PORT}
 CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=4567"]
 ```
 
-Notice how the dependencies (requirements.txt) are created in the first image and we use a second stage to copy what is required into the second.  
-
-When I build the iamges (I did them both side by side to compare the sizes), there was a small space saving on the second image:
-
-![docker multi-stage](assets/docker-multi-stage.png)
+Notice how the dependencies (requirements.txt) are created in the first image and we use a second stage to copy what is required into the second image. This separates an environment preparation (or in more complex cases, compile phases) and a deployment phase.  It would allow, for example, with compiled languages,the ability to leave compilers and other framework in a development image while delivering binary release only for the second stage.  
 
 I want to keep my repo and progress clean and easy to troubleshoot, so for now, this experiment will be kept only in Dockerfile.multi as a backup in the backend-flask folder.
