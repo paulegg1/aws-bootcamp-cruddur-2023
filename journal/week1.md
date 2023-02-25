@@ -284,7 +284,7 @@ In addtion, the app routing needed to be added to map the entry point url (with 
 
 Line 69
 
-```python
+```diff
     return data, 200
 
 + @app.route("/api/activities/notifications", methods=['GET'])
