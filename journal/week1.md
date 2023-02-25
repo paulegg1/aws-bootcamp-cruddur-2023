@@ -345,3 +345,39 @@ I repeated this for the other container built in our collection:
 $ docker tag d8b0bd42a1bf paulegg/cruddur_bootcamp:backend.week1.v1
 $ docker push paulegg/cruddur_bootcamp:backend.week1.v1
 ```
+
+## Investigate multi-stage docker builds
+
+I did some reading on multi-stage docker builds.  There is good documentation at [Docker Multistage](https://docs.docker.com/build/building/multi-stage/).  I only tested this for the backend, but it could of course be extended to the frontend container as well.  For larger images the space and efficiency savings could be quite large.  I created a new Dockerfile as shown here:
+
+```dockerfile
+FROM python:3.10-slim-buster as base
+
+WORKDIR /backend-flask
+
+COPY requirements.txt requirements.txt
+
+RUN pip3 install -r requirements.txt
+
+#2nd stage
+FROM python:3.10-slim-buster
+
+RUN mkdir /backend-flask
+COPY --from=base /backend-flask /backend-flask
+
+ENV FLASK_ENV=development
+# ENV FRONTEND_URL="*"
+# ENV BACKEND_URL="*"
+
+EXPOSE ${PORT}
+# python3 -m flask run --host=0.0.0.0 --port=4567
+CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=4567"]
+```
+
+Notice how the dependencies (requirements.txt) are created in the first image and we use a second stage to copy what is required into the second.  
+
+When I build the iamges (I did them both side by side to compare the sizes), there was a small space saving on the second image:
+
+![docker multi-stage](assets/docker-multi-stage.png)
+
+I want to keep my repo and progress clean and easy to troubleshoot, so for now, this experiment will be kept only in Dockerfile.multi as a backup in the backend-flask folder.
