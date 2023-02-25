@@ -380,4 +380,12 @@ CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=4567"]
 
 Notice how the dependencies (requirements.txt) are created in the first image and we use a second stage to copy what is required into the second image. This separates an environment preparation (or in more complex cases, compile phases) and a deployment phase.  It would allow, for example, with compiled languages,the ability to leave compilers and other framework in a development image while delivering binary release only for the second stage.  
 
+The image successfully built:
+
+![docker multi stage imags](assets/docker-multi-stage.png)
+
+The backend could be successfully run:
+
+![docker multi stage imags](assets/docker-multi-stage-run.png)
+
 I want to keep my repo and progress clean and easy to troubleshoot, so for now, this experiment will be kept only in Dockerfile.multi as a backup in the backend-flask folder.
