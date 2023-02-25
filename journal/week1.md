@@ -314,7 +314,7 @@ Line 1:
 
 ```diff
 +  import './NotificationsFeedPage.css';
--  import React from "react";
+   import React from "react";
 ```
 
 Line 23:
