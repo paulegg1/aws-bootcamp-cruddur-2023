@@ -318,3 +318,30 @@ CMD sh runflask.sh
 ```
 
 I have changed the dockerfile back to the exec form now but left both the alternative commented out.
+
+## Create a dockerhub repo and push images
+
+I also created a docker hub account and began pushing the images to a new repository using the command line.  The process is to login using your docker credentials/token and then work to tag and push your images.  As follows, for the frontend :
+
+```sh
+$ docker login -u paulegg
+$ docker tag fa7be0defd8b paulegg/cruddur_bootcamp:frontend.week1.v1
+$ docker push paulegg/cruddur_bootcamp:frontend.week1.v1
+```
+
+I was able to test pulling this container down to an alternative machine with docker pull:
+
+```sh
+$ docker pull paulegg/cruddur_bootcamp:frontend.week1.v1
+```
+
+Here is the output:
+
+![docker pull from my repo](assets/docker-pull.png)
+
+I repeated this for the other container built in our collection:
+
+```sh
+$ docker tag d8b0bd42a1bf paulegg/cruddur_bootcamp:backend.week1.v1
+$ docker push paulegg/cruddur_bootcamp:backend.week1.v1
+```
