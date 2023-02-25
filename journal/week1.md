@@ -394,7 +394,7 @@ The backend could be successfully run:
 
 I want to keep my repo and progress clean and easy to troubleshoot, so for now, this experiment will be kept only in Dockerfile.multi as a backup in the backend-flask folder.
 
-## Create a dockerhub repo and push images
+## Create an ec2 instance with docker installed and get the containers running
 
 For this challenge, I started with a terraform build of an ec2 instance because I wanted the build to be easily repeatable.  I wanted to ensure I could destroy the entire environment with a single 'terraform destroy' and then build it again with 'plan/apply'.  This way I could build and test and then destroy without generating any additional cost.  The ec2 instance would be within the free tier and would only exist for the time I needed it in order to test.  The 'user_data' script for the ec2 instance is responsible for installing docker and pulling down the images.  The terraform code also creates an elastic IP to assoiciate with the instance and ensures that the VM is secured with a security group (also created with terraform).  
 
