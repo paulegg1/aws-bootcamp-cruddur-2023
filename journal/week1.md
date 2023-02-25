@@ -337,7 +337,7 @@ $ docker pull paulegg/cruddur_bootcamp:frontend.week1.v1
 
 Here is the output:
 
-![docker pull from my repo](assets/docker-pull.png)
+![docker pull from my repo](assets/docker-repo-pull.png)
 
 I repeated this for the other container built in our collection:
 
