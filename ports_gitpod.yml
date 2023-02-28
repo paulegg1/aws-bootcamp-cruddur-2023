@@ -1,0 +1,12 @@
+
+ports:
+   - name: frontend
+     port: 3000
+     opOpen: open-browser
+     visibility: public
+   - name: backend
+     port: 3000
+     visibility: public
+   - name: xray-daemon
+     port: 2000
+     visibility: public
