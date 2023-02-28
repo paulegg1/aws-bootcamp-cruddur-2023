@@ -118,7 +118,7 @@ from opentelemetry import trace
 tracer = trace.get_tracer("home.activities")
 ```
 
-Once we have a handle on the tracer, we can create a new span.  Spans are created using a parent-child model, such that you can see where a parent span drops into a child trace / request.  The creation of a span always uses the current active span as the parent.  You can create a span using `tracer.start_as_current_span("your-span-name"):  It is a new python block, so everything needs to be appropriately indented after the colon.  
+Once we have a handle on the tracer, we can create a new span.  Spans are created using a parent-child model, such that you can see where a parent span drops into a child trace / request.  The creation of a span always uses the current active span as the parent.  You can create a span using `tracer.start_as_current_span("your-span-name"):`  It is a new python block, so everything needs to be appropriately indented after the colon.  
 
 I first created and tested a new span in the home activites service.  The tracer start comes right after we drop into run():
 
