@@ -249,3 +249,19 @@ We also need some new environment variables in the `environment` section in the 
 ```
 
 With that all in place, I was ready to test!
+
+The first challenge was finding my way around the AWS X-Ray console.  In the end I saved the URL that took me to the X-Ray traces pane.  
+
+![XRay URL traces](assets/xray-console-url.png)
+
+Once I found the right location though, the traces were there!
+
+![XRay first backend traces](assets/xray-first-backend-traces.png)
+
+Here's a view of the segments timeline for the basic home page/trace.
+
+![XRay URL traces](assets/xray-home-backend-trace.png)
+
+Finally, a screenshot of the service map.
+
+![XRay ServiceMap](assets/xray-service-map-backend.png)
