@@ -1,0 +1,15 @@
+    1  curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+    2  echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+    3  sudo apt update
+    4  sudo apt install -y postgresql-client-13 libpq-dev
+    5  aws
+    6  FLASK_ADDRESS="https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+    7  aws xray create-group    --group-name "Cruddur"    --filter-expression "service(\"$FLASK_ADDRESS\")
+"
+    8  aws xray create-group    --group-name "Cruddur"    --filter-expression "service("backend-flask")
+"
+    9  aws xray create-group    --group-name "Cruddur"    --filter-expression "service(\"backend-flask\")
+"
+   10  aws xray create-sampling-rule --cli-input-json file://aws/json/xray.json
+   11  history
+   12  history > xray.history
