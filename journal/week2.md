@@ -142,3 +142,110 @@ Testing worked well for home activites, here is a trace in Honeycomb that shows 
 
 
 
+## Backend instrumentation with AWS X-Ray
+
+Next I worked on the the implementation of X-Ray instrumentation.  This was successful, at the time of writing, only to the base level of instrumentation.  I have not yet implemented addition segments or subsegments. If time allows I'll come back and attempt it.
+
+The first step is to setup the environment.  Some environment variables are needed as well as the AWS X-Ray SDK for Python.  The environment variables, as with previous items can be added to your gitpod configuration:
+
+```sh
+export AWS_REGION="us-east-1"
+gp env AWS_REGION="us-east-1"
+```
+
+The AWS X-Ray SDK can be installed using pip.  I added the following line to the requirements.txt file and ran `pip install -r requirements.txt`:
+
+```sh
+aws-xray-sdk
+```
+
+There are 2 import lines that you will need to add the the `app.py` file, these are to import the xray_recorder and the `XRayMiddleware`.
+
+In addition, there are three X-Ray initialization lines that need added *after* the `app = Flask(__name__)` line.  See the changes below.
+
+```python
+...
+# XRAY
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+
+...
+
+app = Flask(__name__)
+# Initialise the AWS Xray stuff
+# https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-python-configuration.html
+xray_url = os.getenv("AWS_XRAY_URL")
+xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
+XRayMiddleware(app, xray_recorder)
+
+...
+```
+
+Next up, there is a new AWS json file to add under `/aws/json/` as `xray.json`.  I set the service name to backend-flask so that we can identify the portion of the application we are instrumenting when we view traces in the X-Ray console.
+
+```json
+{
+    "SamplingRule": {
+        "RuleName": "Cruddur",
+        "ResourceARN": "*",
+        "Priority": 9000,
+        "FixedRate": 0.1,
+        "ReservoirSize": 5,
+        "ServiceName": "backend-flask",
+        "ServiceType": "*",
+        "Host": "*",
+        "HTTPMethod": "*",
+        "URLPath": "*",
+        "Version": 1
+    }
+  }
+```
+
+That is the core application setup complete.  Before we can start instrumenmting though, there are a few AWS requirements that we need to sort out.  Firstly we need to create an X-Ray group and a sampling rule.  This is possible in the AWS Web console, but consistency is best acheived through the use of the `xray.json` file above and the AWS CLI. 
+
+I created the group as follows:
+
+```sh
+aws xray create-group    --group-name "Cruddur"    --filter-expression "service(\"backend-flask\")
+```
+
+The sampling rule, referring to the previously created json file:
+
+```sh
+aws xray create-sampling-rule --cli-input-json file://aws/json/xray.json
+```
+
+The final component we need is an X-Ray daemon service.  This is because the X-Ray service relies on an intermediary component to recieve and forward the traces.  This can be seen circled in the image below (from: https://floqast.com/engineering-blog/post/using-aws-x-ray/)
+
+![XRay Daemon diagram](assets/xray-daemon.png)
+
+This daemon service could be run locally, on a container on ECS or on a docker container launched from our environment.  Andrew Brown kindly did the leg work and demonstrated how to get this running as a docker container which we can place directly in `docker-compose.yml` as follows:
+
+```dockerfile
+  xray-daemon:
+    image: "amazon/aws-xray-daemon"
+    environment:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_REGION: "us-east-1"
+    command:
+      - "xray -o -b xray-daemon:2000"
+    ports:
+      - 2000:2000/udp
+```
+
+We also need some new environment variables in the `environment` section in the docker-compose file, I added these:
+
+```diff
+    environment:
+      FRONTEND_URL: "https://3000-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+      BACKEND_URL: "https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io"
+      OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
+      OTEL_SERVICE_NAME: "backend-flask"
++     AWS_XRAY_URL: "*4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}*"
++     AWS_XRAY_DAEMON_ADDRESS: "xray-daemon:2000"
+    build: ./backend-flask
+```
+
+With that all in place, I was ready to test!
