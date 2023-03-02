@@ -3,6 +3,10 @@ from flask import request
 from flask_cors import CORS, cross_origin
 import os
 
+import watchtower
+import logging
+from time import strftime
+
 # HC / OTEL
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -34,9 +38,17 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
 
-
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+cw_handler = watchtower.CloudWatchLogHandler(log_group='cruddur')
+LOGGER.addHandler(console_handler)
+LOGGER.addHandler(cw_handler)
+LOGGER.info("Top Level App.py Logger")
 
 app = Flask(__name__)
+
+
 # Initialise the AWS Xray stuff
 # https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-python-configuration.html
 xray_url = os.getenv("AWS_XRAY_URL")

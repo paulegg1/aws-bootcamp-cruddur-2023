@@ -314,7 +314,12 @@ def after_request(response):
 
 The `after_request` decorator was placed in `app.py` around line 84.
 
-I think what we have to do next to use the logger in a sub module, in for example the home activities service, is to import the logging library and then create a new logger using the `__name__` syntax, basically, this pattern:
+The basic CloudWatch logging now worked a treat:
+
+![CloudWatch nner service logging](assets/cloudwatch-logs-first-log-stream.png)
+
+
+I think what we have to do next to use the logger in a sub module, for example the home activities service, is to import the logging library and then refer to the same logger using the `__name__` syntax, basically, this pattern:
 
 ```python
 import logging
@@ -340,9 +345,13 @@ tracer = trace.get_tracer("home.activities")
 
 class HomeActivities:
   def run():
-    home_logger.info('message from home activities module')
+    home_logger.info('message from INSIDE home activities module')
     with tracer.start_as_current_span("home-activites-mock-data"):
 
 ...
 
 ```
+
+However, what I found was that I needed to refer to the Flask app name as `app`.  For some reason, the `__name__` syntax would not work for me.  Once I changed this, it worked and I got the outer (from app.py) and inner (from home_activities.py) logger messages in CW.
+
+![CloudWatch Inner service logging](assets/cloudwatch-logs-inner-stream.png)
