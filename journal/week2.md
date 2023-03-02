@@ -338,7 +338,7 @@ from datetime import datetime, timedelta, timezone
 from opentelemetry import trace
 import logging
 
-# create home logger
+# get root logger
 home_logger = logging.getLogger(__name__) 
 
 tracer = trace.get_tracer("home.activities")
@@ -352,6 +352,13 @@ class HomeActivities:
 
 ```
 
-However, what I found was that I needed to refer to the Flask app name as `app`.  For some reason, the `__name__` syntax would not work for me.  Once I changed this, it worked and I got the outer (from app.py) and inner (from home_activities.py) logger messages in CW.
+However, what I found was that I needed to refer to the Flask app name as `app`.  For some reason, the `__name__` syntax would not work for me.  
+
+```python
+# get root logger
+home_logger = logging.getLogger('app') 
+```
+
+Once I changed this, it worked and I got the outer (from app.py) and inner (from home_activities.py) logger messages in CW.
 
 ![CloudWatch Inner service logging](assets/cloudwatch-logs-inner-stream.png)
