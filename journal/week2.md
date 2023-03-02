@@ -362,3 +362,77 @@ home_logger = logging.getLogger('app')
 Once I changed this, it worked and I got the outer (from app.py) and inner (from home_activities.py) logger messages in CW.
 
 ![CloudWatch Inner service logging](assets/cloudwatch-logs-inner-stream.png)
+
+
+## Rollbar
+
+Rollbar is a bug-tracking and monitoring tool that supports a wide range of programming frameworks.  It can be integrated with Python applications and needs to be installed as a python package by adding it to the `requirements.txt` file and running pip install.
+
+```diff
+ aws-xray-sdk
+ watchtower
++blinker
++rollbar
+```
+
+Installing:
+
+```sh
+pip install -r requirements.txt
+```
+
+We need to import at the top of `app.py`:
+
+```python
+import rollbar
+import rollbar.contrib.flask
+from flask import got_request_exception
+```
+
+The instructions on the rollbar site are quite straight forward and there is a copy+pastable section of boilerplate code that can be used to initialize rollbar for python flask apps.  The only item that needs changing is the access token, which is hard coded in the example.  I set the access token as an environment variable in `docker-compose.yml` and used `os.getenv()` to pull the value into the code:
+
+```python
+rollbar_access_token = os.getenv('ROLLBAR_ACCESS_TOKEN')
+@app.before_first_request
+def init_rollbar():
+    """init rollbar module"""
+    rollbar.init(
+        # access token
+        rollbar_access_token,
+        # environment name
+        'production',
+        # server root directory, makes tracebacks prettier
+        root=os.path.dirname(os.path.realpath(__file__)),
+        # flask already sets up logging
+        allow_logging_basic_config=False)
+
+    # send exceptions from `app` to rollbar, using flask's signal system.
+    got_request_exception.connect(rollbar.contrib.flask.report_exception, app)
+```
+
+In addition, following the example, I set a couple of contrived end points in order to test the push of data into rollbar:
+
+```python
+@app.route('/rollbar/test')
+def rollbar_test():
+    rollbar.report_message('Hello World!', 'warning')
+    return "Hello World!"
+
+@app.route('/rollbar/errtest')
+def rollbar_errtest():
+    rollbar.report_message('Error Test', 'critical')
+    return "Hello World!", 500
+```
+
+Once the application is started, I saw items flowing into Rollbar:
+
+![First Rollbar items](assets/rollbar-101.png)
+
+
+![Second Rollbar items](assets/rollbar-102.png)
+
+The error testing shows that Rollbar tracks and highlights your application errors:
+
+
+![Second Rollbar items](assets/rollbar-104-error-testing.png)
+
