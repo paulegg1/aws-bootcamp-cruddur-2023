@@ -1,10 +1,15 @@
 from datetime import datetime, timedelta, timezone
 from opentelemetry import trace
+import logging
+
+# create home logger
+home_logger = logging.getLogger(__name__) 
 
 tracer = trace.get_tracer("home.activities")
 
 class HomeActivities:
   def run():
+    home_logger.info('message from home activities module')
     with tracer.start_as_current_span("home-activites-mock-data"):
       now = datetime.now(timezone.utc).astimezone()
       results = [{

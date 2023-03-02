@@ -265,3 +265,84 @@ Here's a view of the segments timeline for the basic home page/trace.
 Finally, a screenshot of the service map.
 
 ![XRay ServiceMap](assets/xray-service-map-backend.png)
+
+
+## Cloudwatch Logs integration into python
+
+AWS Cloudwatch logs can be integrated with Python applications using the watchtower log handler, [Watchtower](https://pypi.org/project/watchtower/).  It needs to be installed as a python package by adding it to the `requirements.txt` file and running pip install.
+
+```sh
+pip install -r requirements.txt
+```
+
+We need to import `watchtower`, the `logging` library and `strftime` at the top of `app.py`:
+
+```python
+import watchtower
+import logging
+from time import strftime
+```
+
+Then we can use the following to initialize Cloudwatch logging:
+
+```python
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+cw_handler = watchtower.CloudWatchLogHandler(log_group='cruddur')
+LOGGER.addHandler(console_handler)
+LOGGER.addHandler(cw_handler)
+LOGGER.info("Top Level App.py Logger")
+```
+
+Something I learned about Flask was that it has what are termed 'decorators', they are functions that take another function as a parameter, modifies its behaviour and returns a function.  The Flask decorators allow us to inject new functionality in web applications.  There exist two interesting decorators, before_request and after_request.  I started investigating this is order to better understand this line, from Andrew's videos:
+
+```python
+@app.after_request
+def after_request(response):
+```
+
+Anyway, with before_request and after_request we can perform various actions, as the names suggest, either before or after the request is processed.  With Cloudwatch logs we can use it to log any errors post request with:
+
+```python
+@app.after_request
+def after_request(response):
+    timestamp = strftime('[%Y-%b-%d %H:%M]')
+    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
+    return response
+```
+
+The `after_request` decorator was placed in `app.py` around line 84.
+
+I think what we have to do next to use the logger in a sub module, in for example the home activities service, is to import the logging library and then create a new logger using the `__name__` syntax, basically, this pattern:
+
+```python
+import logging
+
+# create logger
+module_logger = logging.getLogger(__name__) 
+
+def some_function():
+    module_logger.info('message from auxiliary module')
+```
+
+In `home_activities.py` then:
+
+```python
+from datetime import datetime, timedelta, timezone
+from opentelemetry import trace
+import logging
+
+# create home logger
+home_logger = logging.getLogger(__name__) 
+
+tracer = trace.get_tracer("home.activities")
+
+class HomeActivities:
+  def run():
+    home_logger.info('message from home activities module')
+    with tracer.start_as_current_span("home-activites-mock-data"):
+
+...
+
+```
