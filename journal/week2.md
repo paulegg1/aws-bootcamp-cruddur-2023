@@ -138,6 +138,20 @@ Testing worked well for home activites, here is a trace in Honeycomb that shows 
 
 ![Honeycomb custom span trace](assets/honeycomb-102-new-span.png)
 
+### HW Challenge - Additional attributes
+
+I came back to Honeycomb after getting the basic instrumentation sorted and added a mock user ID, hard coded to "andrewbrown".  I add the following to get the handle for the custom span and set attributes, I also added the result length as per the demonstration:
+
+```python
+      span = trace.get_current_span()
+      span.set_attribute("user.id", "andrewbrown")
+      span.set_attribute("app.now", now.isoformat())
+...
+      span.set_attribute("app.result_length", len(results))
+      return results
+```
+
+
 
 
 
