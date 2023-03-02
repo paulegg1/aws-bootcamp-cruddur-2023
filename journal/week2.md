@@ -151,7 +151,7 @@ I came back to Honeycomb after getting the basic instrumentation sorted and adde
       return results
 ```
 
-
+![Honeycomb custom span attribs](assets/honeycomb-103-attributes.png)
 
 
 
