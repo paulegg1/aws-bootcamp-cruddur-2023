@@ -243,3 +243,5 @@ import { Auth } from 'aws-amplify';
 
 ...
 ```
+
+# TODO - SIGN UP PAGE
