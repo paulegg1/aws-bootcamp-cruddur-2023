@@ -245,3 +245,22 @@ import { Auth } from 'aws-amplify';
 ```
 
 # TODO - SIGN UP PAGE
+
+#### Note to self, had to update user details to show correct handle on logged in main page
+
+```terraform
+resource "aws_cognito_user" "paulegg" {
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+  username     = "pauleggleton"
+  desired_delivery_mediums = ["EMAIL"]
+  password = "Testing123!"
+
+  attributes = {
+    email          = "paulegg@gmail.com"
+    email_verified = true
+    name           = "Paul Eggleton"
+    preferred_username = "pauleggleton"
+
+  }
+}
+```
