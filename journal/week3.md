@@ -11,10 +11,13 @@ resource "aws_cognito_user_pool" "user_pool" {
   username_configuration {
     case_sensitive = false
   }
-  alias_attributes = ["email"]
+  username_attributes        = ["email"]
+  # The line above conflicts with this one, they are mutually exclusive
+  #alias_attributes = ["email"]
   auto_verified_attributes = ["email"] 
   password_policy {
     minimum_length = 8
+    temporary_password_validity_days = 7
   }
 
   user_attribute_update_settings {
@@ -87,6 +90,25 @@ Note the importance of not forgetting to include STP_AUTH ! :
   ]
  ```
  
+ I also faked a user creation in order to test things out and have an early confirmed user:
+ 
+```terraform
+resource "aws_cognito_user" "paulegg" {
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+  username     = "pauleggleton"
+  desired_delivery_mediums = ["EMAIL"]
+  password = "Testing123!"
+
+  attributes = {
+    email          = "paulegg@gmail.com"
+    email_verified = true
+    name           = "Paul Eggleton"
+    preferred_username = "pauleggleton"
+
+  }
+}
+```
+ 
  ### Installing AWS Amplify
  
  This was straigtfoward:
@@ -105,7 +127,7 @@ It is worth noting that the `--save` option populates `~/frontend-react-js/packa
     "luxon": "^3.1.0",
 ```
  
- ### Configure Amplify
+### Configure Amplify
 
 There are a few steps here that I did to configure AWS Amplify and connect up the application. Firstly, there are some environment variables that need configuring and passing via process.env.VAR syntax into the application.  The environment variables start with the `docker-compose.yml` :
  
@@ -123,7 +145,7 @@ There are a few steps here that I did to configure AWS Amplify and connect up th
  
 The changes to `App.js` were as follows:
 
-```python
+```javascript
 
 import { Amplify } from 'aws-amplify';
 
@@ -151,13 +173,13 @@ Next, I changed the `~/frontend-react.js/src/pages/homefeedpage.js` to put condi
 
 Addition of line to import `Auth` on line 11:
 
-```python
+```javascript
 import { Auth } from 'aws-amplify';
 ```
 
 Lines around 43+ replacement of the checkAuth function expression:
 
-```python
+```javascript
 ...
 // check if we are authenicated
 const checkAuth = async () => {
@@ -185,7 +207,7 @@ const checkAuth = async () => {
 
 I edited the `~/frontend-react.js/src/components/profileInfo.js` page to replace the contents of `const signOut` and to include an import of Auth.  This implements a sign out call for us that uses Auth to call back to Cognito.
 
-```python
+```javascript
 
 ...
 
@@ -214,7 +236,7 @@ import { Auth } from 'aws-amplify';
 
 I edited the `~/frontend-react.js/src/pages/signInPage.js` page to replace `const onsubmit` and to include an import of Auth.  This implements a sign in call by leveraging `Auth.signin()` using the users email and password.
 
-```python
+```javascript
 
 ...
 
@@ -244,23 +266,134 @@ import { Auth } from 'aws-amplify';
 ...
 ```
 
-# TODO - SIGN UP PAGE
+### Sign Up
 
-#### Note to self, had to update user details to show correct handle on logged in main page
+#### SignupPage.js
 
-```terraform
-resource "aws_cognito_user" "paulegg" {
-  user_pool_id = aws_cognito_user_pool.user_pool.id
-  username     = "pauleggleton"
-  desired_delivery_mediums = ["EMAIL"]
-  password = "Testing123!"
+I imported th e Auth module from `aws-amplify` 
 
-  attributes = {
-    email          = "paulegg@gmail.com"
-    email_verified = true
-    name           = "Paul Eggleton"
-    preferred_username = "pauleggleton"
+```diff
+- // [TODO] Authenication
+- import Cookies from 'js-cookie'
++ //  Authenication
++ import { Auth } from 'aws-amplify';
+```
 
+Next, I needed to change the onsubmit so that it no longer faked things with cookies but instead used the `Auth.signUp` call, supplying the form provided username, password and attributes:
+
+```javascript
+const onsubmit = async (event) => {
+  event.preventDefault();
+  setErrors('')
+  try {
+      const { user } = await Auth.signUp({
+        username: email,
+        password: password,
+        attributes: {
+            name: name,
+            email: email,
+            preferred_username: username,
+        },
+        autoSignIn: { // optional - enables auto sign in after user is confirmed
+            enabled: true,
+        }
+      });
+      console.log(user);
+      window.location.href = `/confirm?email=${email}`
+  } catch (error) {
+      console.log(error);
+      setErrors(error.message)
+  }
+  return false
+}
+```
+
+### Code confirmation
+
+#### ConfirmationPage.js
+
+Again, the necessary import of `Auth`
+
+```diff
+- import Cookies from 'js-cookie'
++ import { Auth } from 'aws-amplify';
+```
+
+Next I did the rewrite of `resend_code` and `onsubmit`
+
+```javascript
+const resend_code = async (event) => {
+  setErrors('')
+  try {
+    await Auth.resendSignUp(email);
+    console.log('code resent successfully');
+    setCodeSent(true)
+  } catch (err) {
+    // does not return a code
+    // does cognito always return english
+    // for this to be an okay match?
+    console.log(err)
+    if (err.message == 'Username cannot be empty'){
+      setErrors("You need to provide an email in order to send Resend Activiation Code")   
+    } else if (err.message == "Username/client id combination not found."){
+      setErrors("Email is invalid or cannot be found.")   
+    }
   }
 }
 ```
+
+```javascript
+const onsubmit = async (event) => {
+  event.preventDefault();
+  setErrors('')
+  try {
+    await Auth.confirmSignUp(email, code);
+    window.location.href = "/"
+  } catch (error) {
+    setErrors(error.message)
+  }
+  return false
+}
+```
+
+I had an issue on the `signupPage.js`; I kept getting the message `incorrect confirmation code`.  It turned out to be a mix with email/username, here's the fix in `onsubmit`, line 23:
+
+```diff
+      const { user } = await Auth.signUp({
+-        username: email,
++        username: username,
+```
+
+Once that was in place, the signup worked!
+
+### Recovery of account
+
+#### RecoverPage.js
+
+The usual import was added, then I replaced both `onsubmit_send_code` and `onsubmit_confirm_code`; they need to call Auth.forgotPassword(username)` and `Auth.forgotPasswordSubmit(username, code, password)` respectively.
+
+```javascript
+const onsubmit_send_code = async (event) => {
+  event.preventDefault();
+  setErrors('')
+  Auth.forgotPassword(username)
+  .then((data) => setFormState('confirm_code') )
+  .catch((err) => setErrors(err.message) );
+  return false
+}
+
+const onsubmit_confirm_code = async (event) => {
+  event.preventDefault();
+  setErrors('')
+  if (password == passwordAgain){
+    Auth.forgotPasswordSubmit(username, code, password)
+    .then((data) => setFormState('success'))
+    .catch((err) => setErrors(err.message) );
+  } else {
+    setErrors('Passwords do not match')
+  }
+  return false
+}
+```
+
+
