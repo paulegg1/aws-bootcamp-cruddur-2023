@@ -109,7 +109,7 @@ resource "aws_cognito_user" "paulegg" {
 }
 ```
  
- ### Installing AWS Amplify
+ ## Installing AWS Amplify
  
  This was straigtfoward:
  
@@ -165,6 +165,9 @@ Amplify.configure({
 });
 
 ```
+
+## FrontEnd JS work
+
 ### Conditional display of components 
 
 #### homeFeedPage.js
