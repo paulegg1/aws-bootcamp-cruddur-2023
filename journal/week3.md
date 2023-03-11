@@ -406,7 +406,7 @@ const onsubmit_confirm_code = async (event) => {
 
 This section was a lot more challenging, but I learnt a lot.  I really enjoyed getting my head around the python in both the Cruddur parts of the code as well as the library we installed/setup for the use of `Flask-AWSamplify`.
 
-My first task was to endure that the authentication header was visible.  The lines are now commented, but I played with both sending the token to rollbar (not something I would do in practice for security reasons) and logging it locally:
+My first task was to ensure that the authentication header was visible.  The lines are now commented, but I played with both sending the token to rollbar (not something I would do in practice for security reasons) and logging it locally:
 
 ```diff
 @app.route("/api/activities/home", methods=['GET'])
@@ -417,7 +417,7 @@ def data_home():
   return data, 200
 ```
 
-In both cases, I was able to see the Bearer token so I was quite please.  Of course, I needed to ensure the header was pushed through from `App.py` on the call to home, as shown here:
+In both cases, I was able to see the Bearer token so I was quite pleased.  Of course, I needed to ensure the header was pushed through from `App.py` on the call to home, as shown here:
 
 ```javascript
     try {
@@ -430,7 +430,7 @@ In both cases, I was able to see the Bearer token so I was quite please.  Of cou
       });
  ```
  
- One other change worthy of note is the addition of the variables required in the backend-flask section of the dockerfile:
+ One other change worthy of note is the addition of the variables required in the backend-flask section of the dockerfile, I am working hard to keep any real values for the IDs and Tokens for the various component out of the repo files.  I like to store them in the GitPod environment:
  
  ```dockerfile
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
