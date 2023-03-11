@@ -478,14 +478,10 @@ cognito_jwt_token = CognitoJwtToken(
 )
 ```
 
-The token is extracted using `extract_access_token` which simply uses the request headers to grab the `Authorisation` header and then split it into an array and assign/return the actual JWT token value.  This is on line 60:
+The token is extracted using `extract_access_token` which simply uses the request headers to grab the `Authorisation` header and then split it into an array and assign/return the actual JWT token value.  This is on line 160:
 
 ```python
-cognito_jwt_token = CognitoJwtToken(
-  user_pool_id=os.getenv("AWS_COGNITO_USER_POOL_ID"), 
-  user_pool_client_id=os.getenv("AWS_COGNITO_USER_POOL_CLIENT_ID"),
-  region=os.getenv("AWS_DEFAULT_REGION")
-)
+access_token = extract_access_token(request.headers)
 ```
 
 Next, we need to branch on the call to `HomeActivities.run()`.  One option without any params as before (but only if we failed to get the token) and a new option that calls it and passes the claim for the username returned from a call to `cognito_jwt_token_verify(access_token)`:
