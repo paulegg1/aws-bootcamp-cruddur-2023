@@ -4,7 +4,7 @@
 
 ```sh
 aws rds create-db-instance \
-  --db-instance-identifier cruddur-db-instance \
+  --db-instance-identifier test-cruddur-db-instance \
   --db-instance-class db.t3.micro \
   --engine postgres \
   --engine-version  14.6 \
