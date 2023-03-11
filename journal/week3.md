@@ -144,7 +144,8 @@ There are a few steps here that I did to configure AWS Amplify and connect up th
       REACT_APP_CLIENT_ID: "${REACT_APP_CLIENT_ID}"
     build: ./frontend-react-js
 ...
- 
+```
+
 The changes to `App.js` were as follows:
 
 ```javascript
