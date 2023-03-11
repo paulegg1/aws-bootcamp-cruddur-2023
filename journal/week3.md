@@ -531,3 +531,6 @@ I followed the example and simply inserted a new Crud at position 0 inside home_
 ...
 ```
 
+Finally, we have success the authentication flow works in my app!.
+
+
