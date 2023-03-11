@@ -9,7 +9,7 @@ aws rds create-db-instance \
   --engine postgres \
   --engine-version  14.6 \
   --master-username root \
-  --master-user-password huEE33z2Qvl383 \
+  --master-user-password mypasswordhere \
   --allocated-storage 20 \
   --availability-zone us-east-1 \
   --backup-retention-period 0 \
