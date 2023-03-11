@@ -108,6 +108,8 @@ resource "aws_cognito_user" "paulegg" {
   }
 }
 ```
+
+Please note that this was only a test user!  I created and used an additional user using the sign up, sign in Auth flows developed in this weeks camp!
  
  ## Installing AWS Amplify
  
