@@ -399,4 +399,137 @@ const onsubmit_confirm_code = async (event) => {
 }
 ```
 
+## BackeEnd Auth work
+
+This section was a lot more challenging, but I learnt a lot.  I really enjoyed getting my head around the python in both the Cruddur parts of the code as well as the library we installed/setup for the use of `Flask-AWSamplify`.
+
+My first task was to endure that the authentication header was visible.  The lines are now commented, but I played with both sending the token to rollbar (not something I would do in practice for security reasons) and logging it locally:
+
+```diff
+@app.route("/api/activities/home", methods=['GET'])
+def data_home():
++  #rollbar.report_message(request.headers.get('Authorization'), 'info')
++  #app.logger.debug(request.headers.get('Authorization'))
+  data = HomeActivities.run()
+  return data, 200
+```
+
+In both cases, I was able to see the Bearer token so I was quite please.  Of course, I needed to ensure the header was pushed through from `App.py` on the call to home, as shown here:
+
+```javascript
+    try {
+      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/home`
+      const res = await fetch(backend_url, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`
+        },
+        method: "GET"
+      });
+ ```
+ 
+ One other change worthy of note is the addition of the variables required in the backend-flask section of the dockerfile:
+ 
+ ```dockerfile
+       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"
+      AWS_COGNITO_USER_POOL_ID: "${REACT_APP_AWS_USER_POOLS_ID}"
+      AWS_COGNITO_USER_POOL_CLIENT_ID: "${REACT_APP_CLIENT_ID}"
+    build: ./backend-flask
+    ports:
+```
+
+I also forgot the CORS changes, which had me scratching my head.  I didn't follow the live stream, instead I watched it through and then had to return on occasions when completing the tasks.  Anyway, finally I used the browser devtools inspector and it was obvious there was a CORS error, I fixed this:
+
+```python
+
+ cors = CORS(
+  app, 
+  resources={r"/api/*": {"origins": origins}},
+  expose_headers="location,link",
+  allow_headers="content-type,if-modified-since",
+  headers=['Content-Type', 'Authorization'], 
+  expose_headers='Authorization',
+  methods="OPTIONS,GET,HEAD,POST"
+)
+
+```
+
+### The cognito JWT library
+
+I won't paste the entire file here, but I then added the `cognito_jwt_token.py` file.
+
+[cognito_jwt_token.py](/backend-flask/lib/cognito_jwt_token.py)
+
+### Integrating the JWT library
+
+Firstly, it needs importing, the full class plus a method and the custom exception `TokenVerifyError`;
+
+```python
+from lib.cognito_jwt_token import CognitoJwtToken, extract_access_token, TokenVerifyError
+```
+
+We use the class to get the token on line 60:
+
+```python
+cognito_jwt_token = CognitoJwtToken(
+  user_pool_id=os.getenv("AWS_COGNITO_USER_POOL_ID"), 
+  user_pool_client_id=os.getenv("AWS_COGNITO_USER_POOL_CLIENT_ID"),
+  region=os.getenv("AWS_DEFAULT_REGION")
+)
+```
+
+The token is extracted using `extract_access_token` which simply uses the request headers to grab the `Authorisation` header and then split it into an array and assign/return the actual JWT token value.  This is on line 60:
+
+```python
+cognito_jwt_token = CognitoJwtToken(
+  user_pool_id=os.getenv("AWS_COGNITO_USER_POOL_ID"), 
+  user_pool_client_id=os.getenv("AWS_COGNITO_USER_POOL_CLIENT_ID"),
+  region=os.getenv("AWS_DEFAULT_REGION")
+)
+```
+
+Next, we need to branch on the call to `HomeActivities.run()`.  One option without any params as before (but only if we failed to get the token) and a new option that calls it and passes the claim for the username returned from a call to `cognito_jwt_token_verify(access_token)`:
+
+```python
+...
+
+  access_token = extract_access_token(request.headers)
+  try:
+    claims = cognito_jwt_token.verify(access_token)
+    # authenicatied request
+    app.logger.debug("authenicated")
+    app.logger.debug(claims)
+    app.logger.debug(claims['username'])
+    data = HomeActivities.run(cognito_user_id=claims['username'])
+  except TokenVerifyError as e:
+    # unauthenicatied request
+    app.logger.debug(e)
+    app.logger.debug("unauthenicated")
+    data = HomeActivities.run()
+  return data, 200
+  
+...
+```
+
+I followed the example and simply inserted a new Crud at position 0 inside home_activities.py if the user is logged in (cognito_user_id is not null (None in Python)).
+
+```python
+...
+
+
+      
+      if cognito_user_id != None:
+        extra_crud = {
+          'uuid': '248959df-3079-4947-b847-9e0892d1bab4',
+          'handle':  'Lore',
+          'message': 'My dear brother, it the humans that are the problem',
+          'created_at': (now - timedelta(hours=1)).isoformat(),
+          'expires_at': (now + timedelta(hours=12)).isoformat(),
+          'likes': 1042,
+          'replies': []
+        }
+        results.insert(0,extra_crud)
+
+...
+```
 
