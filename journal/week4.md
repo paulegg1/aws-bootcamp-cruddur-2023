@@ -11,7 +11,7 @@ aws rds create-db-instance \
   --master-username root \
   --master-user-password mypasswordhere \
   --allocated-storage 20 \
-  --availability-zone us-east-1 \
+  --availability-zone us-east-1a \
   --backup-retention-period 0 \
   --port 5432 \
   --no-multi-az \
