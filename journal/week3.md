@@ -433,12 +433,12 @@ In both cases, I was able to see the Bearer token so I was quite pleased.  Of co
  One other change worthy of note is the addition of the variables required in the backend-flask section of the dockerfile, I am working hard to keep any real values for the IDs and Tokens for the various component out of the repo files.  I like to store them in the GitPod environment:
  
  ```dockerfile
+ ...
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"
       AWS_COGNITO_USER_POOL_ID: "${REACT_APP_AWS_USER_POOLS_ID}"
       AWS_COGNITO_USER_POOL_CLIENT_ID: "${REACT_APP_CLIENT_ID}"
-    build: ./backend-flask
-  
+...  
 ```
 
 I also forgot the CORS changes, which had me scratching my head.  I didn't follow the live stream, instead I watched it through and then had to return on occasions when completing the tasks.  Anyway, finally I used the browser devtools inspector and it was obvious there was a CORS error, I fixed this:
