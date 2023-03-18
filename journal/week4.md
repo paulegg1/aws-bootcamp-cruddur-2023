@@ -30,3 +30,12 @@ Connection URL String
 export CONNECTION_URL="postgresql://postgres:pssword@127.0.0.1:5432/cruddur"
 gp env CONNECTION_URL="postgresql://postgres:pssword@127.0.0.1:5432/cruddur"
 ```
+
+Error to TS
+
+```sh
+  File "/usr/local/lib/python3.10/site-packages/psycopg/cursor.py", line 462, in _execute_send
+    self._pgconn.send_query(query.query)
+  File "psycopg_binary/pq/pgconn.pyx", line 214, in psycopg_binary.pq.PGconn.send_query
+TypeError: expected bytes, NoneType found
+```
