@@ -27,10 +27,12 @@ class Db:
     connection_url = os.getenv("CONNECTION_URL")
     self.pool = ConnectionPool(connection_url)
  
+  # internal function to print out (iterate over) a dict of params
+  # used to aid debug on line 75
   def print_params(self,params):
     blue = '\033[94m'
     no_color = '\033[0m'
-    print(f'{blue} SQL Params:{no_color}')
+    print(f'{blue} HERE -- SQL Params:{no_color}')
     for key, value in params.items():
       print(key, ":", value)
 
@@ -68,7 +70,7 @@ class Db:
         return json[0]
   # When we want to return an array of json objects
   def query_object_json(self,sql,params={}):
-
+    # debug functions from self, see above around line 31
     self.print_sql('json',sql)
     self.print_params(params)
     wrapped_sql = self.query_wrap_object(sql)

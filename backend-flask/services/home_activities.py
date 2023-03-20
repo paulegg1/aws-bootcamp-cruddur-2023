@@ -12,9 +12,11 @@ tracer = trace.get_tracer("home.activities")
 class HomeActivities:
   def run(cognito_user_id=None):
     home_logger.info('message from INSIDE home activities module')
-    #with tracer.start_as_current_span("home-activites-mock-data"):
- 
-    sql = db.template('activities','home')
-    results = db.query_array_json(sql)
-    span.set_attribute("app.result_length", len(results))
-    return results
+    with tracer.start_as_current_span("home-activites-mock-data"):
+      now = datetime.now(timezone.utc).astimezone()
+      span = trace.get_current_span()
+      span.set_attribute("app.now", now.isoformat())
+      sql = db.template('activities','home')
+      results = db.query_array_json(sql)
+      span.set_attribute("app.result_length", len(results))
+      return results
