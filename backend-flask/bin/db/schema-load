@@ -1,8 +1,15 @@
-#echo "== db-seed"
+#! /usr/bin/bash
+
+#echo "== db-schema-load"
 CYAN='\033[1;36m'
 NO_COLOR='\033[0m'
-LABEL="db-seed"
+LABEL="db-schema-load"
 printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
+
+DIRECTORY=$(cd `dirname $0` && pwd)
+
+schema_path="${DIRECTORY}/../../db/schema.sql"
+
 
 if [ "$1" = "prod" ]; then
   echo "Running in production mode"
@@ -11,9 +18,4 @@ else
   URL=$CONNECTION_URL
 fi
 
-DIRECTORY=$(cd `dirname $0` && pwd)
-seed_path="${DIRECTORY}/../db/seed.sql"
-
-echo $seed_path
-
-psql $URL cruddur < $seed_path
+psql $URL cruddur < $schema_path
