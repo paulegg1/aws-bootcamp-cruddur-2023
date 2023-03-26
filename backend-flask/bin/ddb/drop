@@ -1,0 +1,24 @@
+#! /usr/bin/bash
+
+if [ -z "$1" ]; then
+  echo "No TABLE_NAME argument supplied eg ./bin/ddb/drop cruddur-messages prod "
+  exit 1
+fi
+TABLE_NAME=$1
+
+if [ "$2" = "prod" ]; then
+  ENDPOINT_URL=""
+  echo "I will delete table: $TABLE_NAME on PROD are you sure ? "
+  read ans
+  if [ "$ans" = "Y" ]; then
+    aws dynamodb delete-table $ENDPOINT_URL --table-name $TABLE_NAME
+  fi
+else
+  ENDPOINT_URL="--endpoint-url=http://localhost:8000"
+  echo "I will delete table: $TABLE_NAME on $ENDPOINT_URL are you sure [Y/N] ? "
+  read ans
+  if [ "$ans" = "Y" ]; then
+    aws dynamodb delete-table $ENDPOINT_URL --table-name $TABLE_NAME
+  fi
+fi
+
