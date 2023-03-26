@@ -74,7 +74,8 @@ def create_message_group(client,message_group_uuid, my_user_uuid, last_message_a
 
   response = client.put_item(
     TableName=table_name,
-    Item=record
+    Item=record,
+    ReturnConsumedCapacity='TOTAL'
   )
   print(response)
 
@@ -93,7 +94,8 @@ def create_message(client,message_group_uuid, created_at, message, my_user_uuid,
   # insert the record into the table
   response = client.put_item(
     TableName=table_name,
-    Item=record
+    Item=record,
+    ReturnConsumedCapacity='TOTAL'
   )
   # print the response
   print(response)

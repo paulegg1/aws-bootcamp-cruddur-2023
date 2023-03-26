@@ -9,8 +9,11 @@ ddb = boto3.resource('dynamodb',**attrs)
 table_name = 'cruddur-messages'
 
 table = ddb.Table(table_name)
-response = table.scan()
+response = table.scan(ReturnConsumedCapacity='INDEXES')
 
 items = response['Items']
 for item in items:
   print(item)
+
+cc = response['ConsumedCapacity']
+print(cc)
