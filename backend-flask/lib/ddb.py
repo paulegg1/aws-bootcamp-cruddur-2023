@@ -26,22 +26,24 @@ class Ddb:
     table_name = 'cruddur-messages'
     query_params = {
       'TableName': table_name,
-      'KeyConditionExpression': 'pk = :pkey',
+      'KeyConditionExpression': 'pk = :pk',
       'ScanIndexForward': False,
       'Limit': 20,
       'ExpressionAttributeValues': {
-        ':pkey': {'S': f"GRP#{my_user_uuid}"}
+        ':pk': {'S': f"GRP#{my_user_uuid}"}
       }
     }
-    print('query-params')
-    print(query_params)
-    print('client')
-    print(client)
+    print('query-params : ', query_params)
+    
+    print('client: ', client)
+
 
     # query the table
     response = client.query(**query_params)
+    print('Full Response : ', response)
     items = response['Items']
     
+    print("items : ", items)
     results = []
     for item in items:
       last_sent_at = item['sk']['S']

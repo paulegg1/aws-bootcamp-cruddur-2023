@@ -1,0 +1,94 @@
+    1  curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+    2  echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+    3  sudo apt update
+    4  sudo apt install -y postgresql-client-13 libpq-dev
+    5  export GITPOD_IP=$(curl ifconfig.me)
+    6  source "$THEIA_WORKSPACE_ROOT/backend-flask/bin/rds/update-sg-rule"
+    7  #aws cognito-idp list-users --user-pool-id
+    8  env |grep -i pool
+    9  #aws cognito-idp list-users --user-pool-id $AWS_COGNITO_USER_POOL_IS --limit 10
+   10  aws cognito-idp list-users --user-pool-id $AWS_COGNITO_USER_POOL_IS --limit 10
+   11  aws cognito-idp list-users --user-pool-id $AWS_COGNITO_USER_POOL_ID --limit 10
+   12  aws cognito-idp list-users --user-pool-id $AWS_COGNITO_USER_POOL_ID --limit 10 --output table
+   13  cd backend-flask/bin/cognito/
+   14  ls
+   15  ./list-users 
+   16  env |grep -i post
+   17  ls -l 
+   18  chmod u+x list-users 
+   19  cd ../db/
+   20  ls
+   21  chmod u+x update-cognito-userids 
+   22  ./update-cognito-userids 
+   23  env |grep -i post
+   24  ls
+   25  ./create 
+   26  #CONNECTION_URL=postgresql://postgres:password@127.0.0.1:5432/cruddur
+   27  more create 
+   28  CONNECTION_URL=postgresql://postgres:password@127.0.0.1:5432/cruddur
+   29  ./create
+   30  ls
+   31  ./drop
+   32  ./schema-load 
+   33  ./create 
+   34  ./schema-load 
+   35  ./seed 
+   36  ls
+   37  ./update-cognito-userids 
+   38  ./seed
+   39  ./update-cognito-userids 
+   40  ls
+   41  more ../doit-all 
+   42  ../doit-all 
+   43  ls
+   44  cd ../
+   45  ./doit-all 
+   46  ls ../db
+   47  mv doit-all db
+   48  cd db
+   49  ./doit-all 
+   50  vi doit-all 
+   51  ./doit-all 
+   52  vi doit-all 
+   53  ./doit-all 
+   54  ls update-cognito-userids 
+   55  ls
+   56  ./doit-all 
+   57  vi doit-all 
+   58  ./doit-all 
+   59  ls
+   60  ./update-cognito-userids 
+   61  psql -h localhost -U postgres -c 'select display_name,handle,cognito_user_id from public.users;' cruddur
+   62  ./doit-all 
+   63  cd ./../../db
+   64  ls
+   65  cd sql
+   66  ls
+   67  cd activities/
+   68  mv users/ ..
+   69  ls
+   70  cd ..
+   71  ls
+   72  history |grep psql
+   73  history |grep local
+   74  ls
+   75  env |grep -i post
+   76  psql -h localhost -U postgres -c 'select display_name,handle,cognito_user_id from public.users;' cruddur
+   77  psql -h localhost -U postgres -c 'select uuid,display_name,handle,cognito_user_id from public.users;' cruddur
+   78  psql -h localhost -U postgres -c 'select * from public.users;' cruddur
+   79  ls ..
+   80  cd ../../bin/db
+   81  ./update-cognito-userids 
+   82  cd -
+   83  psql -h localhost -U postgres -c 'select * from public.users;' cruddur
+   84  env |grep CONN
+   85  psql $PROD_CONNECTION_URL -c 'select * from public.users;' cruddur
+   86  psql $PROD_CONNECTION_URL -c 'select * from public.users;' cruddur | tee
+   87  psql -h localhost -U postgres -c 'select * from public.users;' cruddur
+   88  psql $PROD_CONNECTION_URL -c 'select * from public.users WHERE handle like %Paul% ;' cruddur | tee
+   89  psql $PROD_CONNECTION_URL -c 'select * from public.users WHERE handle = "Paul" ;' cruddur | tee
+   90  psql $PROD_CONNECTION_URL -c "select * from public.users WHERE handle = 'Paul' ;" cruddur | tee
+   91  psql $PROD_CONNECTION_URL -c "select * from public.users WHERE handle like 'Paul%' ;" cruddur | tee
+   92  psql $CONNECTION_URL -c "select * from public.users WHERE handle like 'Paul%' ;" cruddur | tee
+   93  history
+   94  history > recent_command_history.out
