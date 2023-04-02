@@ -23,7 +23,7 @@ year = str(datetime.now().year)
 query_params = {
   'TableName': table_name,
   'ScanIndexForward': False,
-  'Limit': 20,
+  'Limit': 200,
   'ReturnConsumedCapacity': 'TOTAL',
   ## KeyConditionExpression is tied to ExpressionAttributeValues
   ## The hashed values/options is for between times
