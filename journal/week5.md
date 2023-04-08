@@ -30,6 +30,9 @@ Use the schema-load script in 'bin/ddb' to create the prod DynamoDB table.  Shou
 
 Next, enable streams, doable in the AWS console with 'new image' attributes included.  Go to 'Exports and Streams' then 'DynamoDB Stream Details' and select 'New Image'.  This allows item-level changes to be detected.
 
+Create Trigger in DDB, in the console for Lambda Function `cruddur-messaging-stream`.  Batch size 1.  Activate on create.
+
+
 ### DDB VPC Endpoint ###
 
 At the moment, this was also created manually in the AWS console, but I intend to recreate using TF.  This is my draft TF block for it.
@@ -60,3 +63,19 @@ For the manual creation, it is found under VPC, endpoints, select the AWS servic
 We need a Lambda trigger to handle the update of a new message.  Copy and paste the code from 'aws/lambdas/cruddur-messaging-stream.py' into a new Lamba called 'cruddur-messaging-stream'.  Remember to add the policy 'AWSLambdaInvocation-DynamoDB' to the role attached to the Lambda.
 
 Also add a trigger under streams in DynamoDB, select the 'cruddur-messaging-stream' from the dropdown.
+
+### Bring app up using production DynamoDB ###
+
+Comment the local AWS Endpoint out of `docker-compose.yml`
+
+#AWS_ENDPOINT_URL: "http://dynamodb-local:8000"
+
+Down and up the app.
+
+Wow, this works.
+
+![DDB prod works ](assets/ddb-prod-works.png) 
+
+### Lambda Trigger needs DDB update items ###
+
+Add AmazonDynamoDBFullAccess for now.  Need to pare this back later.
