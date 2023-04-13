@@ -237,7 +237,7 @@ $ echo $ECR_PYTHON_URL
 540771840545.dkr.ecr.us-east-1.amazonaws.com/cruddur-python
 ```
 
-It is also possible to get the repo URI this using:
+It is also possible to get the repo URI using:
 
 ```sh
 aws ecr describe-repositories --repository-name cruddur-python --query 'repositories[0].repositoryUri'
