@@ -221,7 +221,7 @@ You will now see the image in the ECR in AWS Console, go and check.
 Now we need to push an image of our Flash app up to ECR.
 
 First we need to edit the Dockerfile and replace the DH reference to slim-buster with our own ECR-stored copy.  This means our Flask app will now use our ECR-stored slim-buster container.
-
+ 
 The top of the DockerFile in `backend-flask` needs this as the top line:
 
 ```DockerFile
