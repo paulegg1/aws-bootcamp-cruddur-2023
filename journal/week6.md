@@ -1,5 +1,38 @@
 # Week 6 — Deploying Containers
 
+
+### The Defaults for Env Vars from AB ##
+
+This is reference.  Used occasionally during the work.
+
+A useful way to grab the default VPC ID
+
+```sh
+export DEFAULT_VPC_ID=$(aws ec2 describe-vpcs \
+--filters "Name=isDefault, Values=true" \
+--query "Vpcs[0].VpcId" \
+--output text)
+echo $DEFAULT_VPC_ID
+```
+
+It doesn't seem that I have a default VPC in us-east-1...  So, a hack until I investigate further:
+
+```sh
+export DEFAULT_VPC_ID=vpc-0fb11da1fc45e60a8
+```
+
+This allows the next part to work:
+
+```sh
+export DEFAULT_SUBNET_IDS=$(aws ec2 describe-subnets  \
+ --filters Name=vpc-id,Values=$DEFAULT_VPC_ID \
+ --query 'Subnets[*].SubnetId' \
+ --output json | jq -r 'join(",")')
+echo $DEFAULT_SUBNET_IDS
+```
+
+
+
 ## RDS Test Script ##
 
 First thing to do is to create the RDS test script and get that working. It uses Python and gets the OS Env variable for our PSQL DB and then simply tries to connect.  As explained by Andrew, this allows us to test from the container without having to install PSQL client.
@@ -77,8 +110,8 @@ gitpod /workspace/aws-bootcamp-cruddur-2023/backend-flask/bin/flask (main) $ ech
 Create the cloudwatch group :
 
 ```sh
-aws logs create-log-group --log-group-name /cruddur/fargate-cluster
-aws logs put-retention-policy --log-group-name /cruddur/fargate-cluster --retention-in-days 1
+aws logs create-log-group --log-group-name cruddur
+aws logs put-retention-policy --log-group-name cruddur --retention-in-days 1
 ```
 
 ## Create Cluster ##
@@ -253,4 +286,356 @@ aws ecr create-repository \
   --image-tag-mutability MUTABLE
 ```
 
+Output should look like this:
+
+```sh
+$ aws ecr create-repository \
+  --repository-name backend-flask \
+  --image-tag-mutability MUTABLE
+{
+    "repository": {
+        "repositoryArn": "arn:aws:ecr:us-east-1:540771840545:repository/backend-flask",
+        "registryId": "540771840545",
+        "repositoryName": "backend-flask",
+        "repositoryUri": "540771840545.dkr.ecr.us-east-1.amazonaws.com/backend-flask",
+        "createdAt": "2023-04-13T20:03:36+00:00",
+        "imageTagMutability": "MUTABLE",
+        "imageScanningConfiguration": {
+            "scanOnPush": false
+        },
+        "encryptionConfiguration": {
+            "encryptionType": "AES256"
+        }
+    }
+}
+```
+
+Next set an env var for the URL to reach this new repo.
+
+```sh
+export ECR_BACKEND_FLASK_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/backend-flask"
+echo $ECR_BACKEND_FLASK_URL
+```
+
+Now, build the image.  This is our own, not one that we pulled from DH, as in the previous example for Python slim.  
+
+```sh
+cd /workspace/aws-bootcamp-cruddur-2023/backend-flask
+docker build -t backend-flask .
+```
+
+This should build and you'll see the pull from the ECR for the base layer (python:3.10-slim-buster):
+
+```sh
+$ docker build -t backend-flask .
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  134.1kB
+Step 1/8 : FROM 540771840545.dkr.ecr.us-east-1.amazonaws.com/cruddur-python:3.10-slim-buster
+3.10-slim-buster: Pulling from cruddur-python
+9fbefa337077: Pull complete 
+a25702e0699e: Pull complete 
+...
+```
+
+Next, tag the image:
+
+```sh
+docker tag backend-flask:latest $ECR_BACKEND_FLASK_URL:latest
+```
+
+Push the image up to the repo.
+
+```sh
+docker push $ECR_BACKEND_FLASK_URL:latest
+```
+
+This should push successfully, you can check in the console:
+
+![ECR has Backend Flask ](assets/ecr-backend-flask.png)
+
+
+## Create System Manager Parameter Store ##
+
+We need AWS SSM Parameter store to store our various variables and secrets.  For this, you need to make sure you have all of the following set as environment variables in your shell.  These will come from your current `docker-compose.yml` file (stored in your env from gp env)
+
+      PROD_CONNECTION_URL: "${PROD_CONNECTION_URL}"
+      OTEL_EXPORTER_OTLP_HEADERS: "x-honeycomb-team=${HONEYCOMB_API_KEY}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      ROLLBAR_ACCESS_TOKEN: "${ROLLBAR_ACCESS_TOKEN}"
+
+Also
+
+      HONEYCOMB_API_KEY
+
+Then set them as follows:
+
+```sh
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/AWS_ACCESS_KEY_ID" --value $AWS_ACCESS_KEY_ID
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/AWS_SECRET_ACCESS_KEY" --value $AWS_SECRET_ACCESS_KEY
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/CONNECTION_URL" --value $PROD_CONNECTION_URL
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/ROLLBAR_ACCESS_TOKEN" --value $ROLLBAR_ACCESS_TOKEN
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/OTEL_EXPORTER_OTLP_HEADERS" --value "x-honeycomb-team=$HONEYCOMB_API_KEY"
+```
+
+Investigate your parameters in the console under systems manager -> parameter store.
+
+
+
+## Create Task and Execution Roles for Task Definition ##
+
+### Create Execution Role ###
+
+Create a new policy file under `aws/policies` to hold the policy definition (call it `service-execution-policy.json`):
+
+```json
+{
+    "Version":"2012-10-17",
+    "Statement":[{
+        "Action":["sts:AssumeRole"],
+        "Effect":"Allow",
+        "Principal":{
+          "Service":["ecs-tasks.amazonaws.com"]
+      }}]
+  }
+```
+
+This can then be used with aws cli `create-role`
+
+```sh
+aws iam create-role --role-name CruddurServiceExecutionRole --assume-role-policy-document file://aws/policies/service-assume-role-execution-policy.json
+```
+
+Output should be:
+
+
+
+
+```sh
+$ aws iam create-role --role-name CruddurServiceExecutionRole --assume-role-policy-document file://aws/policies/service-assume-role-execution-policy.json
+{
+    "Role": {
+        "Path": "/",
+        "RoleName": "CruddurServiceExecutionRole",
+        "RoleId": "AROAX32EDOIQ2WTHZEZ6R",
+        "Arn": "arn:aws:iam::540771840545:role/CruddurServiceExecutionRole",
+        "CreateDate": "2023-04-13T21:03:28+00:00",
+        "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": [
+                        "sts:AssumeRole"
+                    ],
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": [
+                            "ecs-tasks.amazonaws.com"
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}
+```
+
+Then you need another file for the service execution policy under aws:
+
+```json
+{
+  "Version":"2012-10-17",
+  "Statement":[{
+        "Effect": "Allow",
+        "Action": [
+          "ssm:GetParameters",
+          "ssm:GetParameter"
+        ],
+        "Resource": "arn:aws:ssm:us-east-1:540771840545:parameter/cruddur/backend-flask/*"
+    }]
+}
+```
+
+Then run:
+
+```sh
+aws iam put-role-policy \
+  --policy-name CruddurServiceExecutionPolicy \
+  --role-name CruddurServiceExecutionRole \
+  --policy-document file://aws/policies/service-execution-policy.json
+
+
+aws iam attach-role-policy \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy \
+    --role-name CruddurServiceExecutionRole
+```
+
+Check the new role in the AWS console, IAM.
+
+![Check Role ](assets/service-execution-role.png)
+
+
+## Create Task Role ##
+
+Do this via the AWS CLI
+
+```sh
+aws iam create-role \
+    --role-name CruddurTaskRole \
+    --assume-role-policy-document "{
+  \"Version\":\"2012-10-17\",
+  \"Statement\":[{
+    \"Action\":[\"sts:AssumeRole\"],
+    \"Effect\":\"Allow\",
+    \"Principal\":{
+      \"Service\":[\"ecs-tasks.amazonaws.com\"]
+    }
+  }]
+}"
+
+aws iam put-role-policy \
+  --policy-name SSMAccessPolicy \
+  --role-name CruddurTaskRole \
+  --policy-document "{
+  \"Version\":\"2012-10-17\",
+  \"Statement\":[{
+    \"Action\":[
+      \"ssmmessages:CreateControlChannel\",
+      \"ssmmessages:CreateDataChannel\",
+      \"ssmmessages:OpenControlChannel\",
+      \"ssmmessages:OpenDataChannel\"
+    ],
+    \"Effect\":\"Allow\",
+    \"Resource\":\"*\"
+  }]
+}
+"
+
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAccess --role-name CruddurTaskRole
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess --role-name CruddurTaskRole
+```
+
+Check this in the AWS Console
+
+
+![Check Task Role ](assets/task-role.png)
+
+
+## Register Task Definition ##
+
+With local Docker, you use docker-compose.yml, but with ECS we must use a task definition file.  Create a new folder `aws\task-definitions` and create a file within called `backend-flask.json`
+
+Here's the contents:
+
+```json
+{
+    "family": "backend-flask",
+    "executionRoleArn": "arn:aws:iam::540771840545:role/CruddurServiceExecutionRole",
+    "taskRoleArn": "arn:aws:iam::540771840545:role/CruddurTaskRole",
+    "networkMode": "awsvpc",
+    "cpu": "256",
+    "memory": "512",
+    "requiresCompatibilities": [ 
+      "FARGATE" 
+    ],
+    "containerDefinitions": [
+      {
+        "name": "backend-flask",
+        "image": "540771840545.dkr.ecr.us-east-1.amazonaws.com/backend-flask",
+        "essential": true,
+        "healthCheck": {
+          "command": [
+            "CMD-SHELL",
+            "python /backend-flask/bin/flask/health-check"
+          ],
+          "interval": 30,
+          "timeout": 5,
+          "retries": 3,
+          "startPeriod": 60
+        },
+        "portMappings": [
+          {
+            "name": "backend-flask",
+            "containerPort": 4567,
+            "protocol": "tcp", 
+            "appProtocol": "http"
+          }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+              "awslogs-group": "cruddur",
+              "awslogs-region": "us-east-1",
+              "awslogs-stream-prefix": "backend-flask"
+          }
+        },
+        "environment": [
+          {"name": "OTEL_SERVICE_NAME", "value": "backend-flask"},
+          {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "https://api.honeycomb.io"},
+          {"name": "AWS_COGNITO_USER_POOL_ID", "value": "us-east-1_dh0ExXiP1"},
+          {"name": "AWS_COGNITO_USER_POOL_CLIENT_ID", "value": "63q2l315cgptsl5mrauqbvab7a"},
+          {"name": "FRONTEND_URL", "value": "*"},
+          {"name": "BACKEND_URL", "value": "*"},
+          {"name": "AWS_DEFAULT_REGION", "value": "us-east-1"}
+        ],
+        "secrets": [
+          {"name": "AWS_ACCESS_KEY_ID"    , "valueFrom": "arn:aws:ssm:us-east-1:540771840545:parameter/cruddur/backend-flask/AWS_ACCESS_KEY_ID"},
+          {"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": "arn:aws:ssm:us-east-1:540771840545:parameter/cruddur/backend-flask/AWS_SECRET_ACCESS_KEY"},
+          {"name": "CONNECTION_URL"       , "valueFrom": "arn:aws:ssm:us-east-1:540771840545:parameter/cruddur/backend-flask/CONNECTION_URL" },
+          {"name": "ROLLBAR_ACCESS_TOKEN" , "valueFrom": "arn:aws:ssm:us-east-1:540771840545:parameter/cruddur/backend-flask/ROLLBAR_ACCESS_TOKEN" },
+          {"name": "OTEL_EXPORTER_OTLP_HEADERS" , "valueFrom": "arn:aws:ssm:us-east-1:540771840545:parameter/cruddur/backend-flask/OTEL_EXPORTER_OTLP_HEADERS" }
+        ]
+      }
+    ]
+  }
+  ```
+Then run this to create the task definition for the backend flask:
+
+```sh
+aws ecs register-task-definition --cli-input-json file://aws/task-definitions/backend-flask.json
+```
+You will be returned JSON, it is large, I've stored it in `aws\outputs` but it starts:
+
+```json
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:us-east-1:540771840545:task-definition/backend-flask:1",
+        "containerDefinitions": [
+...
+```
+
+Check it in the AWS console, under ECS, Task Definitions.
+
+## Create Security Group ##
+
+This requires the DEFAULT_VPC_ID env var to be set - see the very top of this file.
+
+```sh
+export CRUD_SERVICE_SG=$(aws ec2 create-security-group \
+  --group-name "crud-srv-sg" \
+  --description "Security group for Cruddur services on ECS" \
+  --vpc-id $DEFAULT_VPC_ID \
+  --query "GroupId" --output text)
+echo $CRUD_SERVICE_SG
+```
+
+With that SG created, authorize it.
+
+```sh
+aws ec2 authorize-security-group-ingress \
+  --group-id $CRUD_SERVICE_SG \
+  --protocol tcp \
+  --port 80 \
+  --cidr 0.0.0.0/0
+```
+
+
+## Create Service test for ECS in console... ##
+
+Now under ECS, Cluster, create service, you WILL be able to select a task definition family.  It should show `backend-flask`.
+
+Select the SG Created in the previous step (see $CRUD_SERVICE_SG)
 
