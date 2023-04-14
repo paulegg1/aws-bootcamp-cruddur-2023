@@ -151,7 +151,7 @@ echo $CRUD_CLUSTER_SG
 
 ```sh
 export CRUD_CLUSTER_SG=$(aws ec2 describe-security-groups \
---group-names cruddur-ecs-cluster-sg \
+--filters Name=vpc-id,Values=$DEFAULT_VPC_ID \
 --query 'SecurityGroups[0].GroupId' \
 --output text)
 ```
@@ -639,3 +639,136 @@ Now under ECS, Cluster, create service, you WILL be able to select a task defini
 
 Select the SG Created in the previous step (see $CRUD_SERVICE_SG)
 
+## Launch Cluster in ECS via the Console ##
+
+This worked for me first time :) 
+
+Need to delete and run via command line.  See below.
+
+## Launch service via command line ##
+
+Unfortunately, in order to enable execute-command on the service it needs to be created via the CLI because the options isn't present in the web console.
+
+Create the file `aws/json/service-backend-flask.json` and then run
+
+```sh
+aws ecs create-service --cli-input-json file://aws/json/service-backend-flask.json
+```
+
+Output is json if successful and looks like this (truncated):
+
+```json
+{
+    "service": {
+        "serviceArn": "arn:aws:ecs:us-east-1:540771840545:service/cruddur/backend-flask",
+        "serviceName": "backend-flask",
+        "clusterArn": "arn:aws:ecs:us-east-1:540771840545:cluster/cruddur",
+        "loadBalancers": [],
+        "serviceRegistries": [],
+        "status": "ACTIVE",
+        "desiredCount": 1,
+...
+```
+
+The task should have enableExecuteCommand set to true:
+
+```sh
+gitpod /workspace/aws-bootcamp-cruddur-2023 (main) $ aws ecs describe-tasks --cluster cruddur --tasks 20b5fce0b0ac44928ab516a5db2cb4a3 |grep enableExec
+            "enableExecuteCommand": true,
+gitpod /workspace/aws-bootcamp-cruddur-2023 (main) $ 
+```
+
+The console should show the service being created.  Go and check!
+
+## The SHELL WORKS ##
+
+Now test the execute-command using the task ID of the new task:
+
+```sh
+$ aws ecs execute-command --region $AWS_DEFAULT_REGION --cluster cruddur --task 6558d4628b704a1f92b2582041b2119b --container backend-flask --command "/bin/bash" --interactive
+
+The Session Manager plugin was installed successfully. Use the AWS CLI to start a session.
+
+
+Starting session with SessionId: ecs-execute-command-0cf7e71dfe57d40e2
+root@ip-10-6-24-202:/backend-flask# 
+root@ip-10-6-24-202:/backend-flask# 
+```
+## Add the SSM stuff to gitpod yml for next times ##
+
+```sh
+  - name: fargate
+    before: |
+      curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+      sudo dpkg -i session-manager-plugin.deb
+      cd backend-flask
+```
+
+There is now a small utility script to connect (backend-flask/bin/ssm/):
+
+```sh 
+$ chmod u+x connecto-to-service 
+$ ./connecto-to-service 6558d4628b704a1f92b2582041b2119b backend-flask
+
+The Session Manager plugin was installed successfully. Use the AWS CLI to start a session.
+
+
+Starting session with SessionId: ecs-execute-command-0f2c0f8e568c23a1c
+root@ip-10-6-24-202:/backend-flask# 
+```
+
+## list tasks ##
+
+Just a note to show how to list current tasks:
+
+```sh
+aws ecs list-tasks --cluster cruddur 
+```
+
+also - by state
+
+```sh
+aws ecs list-tasks --cluster cruddur --desired-status STOPPED
+```
+
+## Check Public access ##
+
+Go here in the console, to find the task:
+
+Amazon Elastic Container Service
+Clusters
+cruddur
+Services
+backend-flask
+Configuration
+<TASK>
+
+You should find the public IP, try opening it to access the service.
+
+In the container details, you will find a Network Bindings tab.  This shows that the service is running on port 4567.
+
+
+![Check Ports ](assets/network-bindings.png)
+
+
+To add 4567:
+
+```sh
+export CRUD_CLUSTER_SG=$(aws ec2 describe-security-groups \
+--filters Name=vpc-id,Values=$DEFAULT_VPC_ID \
+--query 'SecurityGroups[0].GroupId' \
+--output text)
+```
+
+Check the SG ID is correct and then:
+
+```sh
+aws ec2 authorize-security-group-ingress --group-id $CRUD_CLUSTER_SG  --protocol tcp --port 4567  --cidr 0.0.0.0/0
+```
+
+Then, try the public address with the correct port, access the health check.  This should now work:
+
+
+![backend-flask is there](assets/ecs-backend-flask-works.png)
+
+Next, need conns to RDS.  

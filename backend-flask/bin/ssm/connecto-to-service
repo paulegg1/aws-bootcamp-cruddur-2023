@@ -1,0 +1,20 @@
+#!/bin/bash
+
+## $1 should be task ID such as 6558d4628b704a1f92b2582041b2119b
+## $2 should be container name as backend-flask
+## ./connect-to-service 6558d4628b704a1f92b2582041b2119b backend-flask
+##
+
+if [ -z "$1" ]; then
+  echo "need a task ID as arg 1 please "
+  exit 1
+fi
+
+if [ -z "$2" ]; then
+  echo "need a container ID as arg 2 please "
+  exit 1
+fi
+
+aws ecs execute-command --region $AWS_DEFAULT_REGION \
+--cluster cruddur --task $1 --container $2 \
+--command "/bin/bash" --interactive

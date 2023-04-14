@@ -1,0 +1,41 @@
+
+AWS Cli 
+
+aws ecs commands.
+
+1.  Login to ECR
+
+aws ecr get-login-password --region $AWS_DEFAULT_REGION |  docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+
+2.  To execute a command on your ECS
+
+aws ecs execute-command --region $AWS_DEFAULT_REGION --cluster cruddur --task e2361d5936b34b0c98feff2679b736a8 --container backend-flask --command "/bin/bash" --interactive
+
+This didn't work.  Needs Session Manager Plugin
+
+3.  Install Session Manager Plugin
+
+   a.  curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+   b.  sudo dpkg -i session-manager-plugin.deb
+   c.  session-manager-plugin    ## Just to test
+
+Still can't execute command.  Needs the enable-execute-command set on the service.
+
+Tried this but doesn't work:
+
+   a.  aws ecs update-service --cluster cruddur --task-definition backend-flask --enable-execute-command --service backend-flask
+   b.  aws ecs describe-tasks --cluster cruddur --tasks e2361d5936b34b0c98feff2679b736a8 |grep enableExec
+
+So, we need to use the CLI and a json file to recreate the service and include "enabledExecuteCommand": true.  See aws/json/service-backend-flask.json
+
+
+Unfortunately, in order to enable execute-command on the service it needs to be created via the CLI because the options isn't present in the web console.
+
+Create the file `aws/json/service-backend-flask.json` and then run
+
+```sh
+aws ecs create-service --cli-input-json file://aws/json/service-backend-flask.json
+
+The following should work after launch:
+
+ aws ecs execute-command --region $AWS_DEFAULT_REGION --cluster cruddur --task 6558d4628b704a1f92b2582041b2119b --container backend-flask --command "/bin/bash" --interactive
