@@ -754,6 +754,9 @@ In the container details, you will find a Network Bindings tab.  This shows that
 To add 4567:
 
 ```sh
+
+export DEFAULT_VPC_ID=vpc-0fb11da1fc45e60a8
+
 export CRUD_CLUSTER_SG=$(aws ec2 describe-security-groups \
 --filters Name=vpc-id,Values=$DEFAULT_VPC_ID \
 --query 'SecurityGroups[0].GroupId' \
@@ -771,4 +774,75 @@ Then, try the public address with the correct port, access the health check.  Th
 
 ![backend-flask is there](assets/ecs-backend-flask-works.png)
 
-Next, need conns to RDS.  
+Next, need conns to RDS.  Currently, of course, our security group for RDS does not contain any entry to allow access from this new backend ECS container.  For now, add the SG that is associated with the ECS cluster (in this case - ):
+
+```sh
+export DEFAULT_VPC_ID=vpc-0fb11da1fc45e60a8
+
+export CRUD_CLUSTER_SG=$(aws ec2 describe-security-groups \
+ --filters "Name=ip-permission.to-port,Values=4567" \
+ --query 'SecurityGroups[?IpPermissions[?ToPort==`4567`]].GroupId' \
+ --output text --region us-east-1)
+
+$ echo $CRUD_CLUSTER_SG
+sg-08e0ef94ae963f863
+```
+
+Use that SG above and add it as a source address on the postgres SG (sg-053cc397826a476cc) for postgres port 5432.  Once done, we can test the access from the container itself:
+
+```sh
+ $ ./connecto-to-service 6558d4628b704a1f92b2582041b2119b backend-flask
+
+The Session Manager plugin was installed successfully. Use the AWS CLI to start a session.
+
+
+Starting session with SessionId: ecs-execute-command-0fa201622c231e477
+root@ip-10-6-24-202:/backend-flask# cd bin/db
+root@ip-10-6-24-202:/backend-flask/bin/db# ls
+connect  create  doit-all  drop  schema-load  seed  test  update-cognito-userids  who
+root@ip-10-6-24-202:/backend-flask/bin/db# ./test
+attempting connection
+Connection successful!
+root@ip-10-6-24-202:/backend-flask/bin/db# 
+```
+
+Now, finally!! the backend should be reachable in a browser, test it from your own machine shell or the browser itself:
+
+```sh
+$ curl http://18.234.194.45:4567/api/activities/home
+[
+  {
+    "created_at": "2023-04-08T18:01:00.335672",
+    "display_name": "Andrew Brown",
+    "expires_at": "2023-04-18T18:01:00.335672",
+    "handle": "andrewbrown",
+    "likes_count": 0,
+    "message": "This was imported as seed data!",
+    "replies_count": 0,
+    "reply_to_activity_uuid": null,
+    "reposts_count": 0,
+    "uuid": "0e1db294-507c-4baa-a9a2-fa1a34a565d5"
+  }
+]
+```
+
+### Service connect ? ###
+
+in ECS you should setup Service Connect so that the backend service registers using the internal namespace and is available for connections from other services in ECS.  This can be done in the portal or, as we will do, added to the JSON for the service definition.   Add this to the bottom of the `aws/json/service-backend-flask.json` file:
+
+```diff
+   "propagateTags": "SERVICE",
+   "serviceName": "backend-flask",
+   "taskDefinition": "backend-flask",
++  "serviceConnectConfiguration": {
++    "enabled": true,
++    "namespace": "cruddur",
++    "services": [
++      {
++        "portName": "backend-flask",
++        "discoveryName": "backend-flask",
++        "clientAliases": [{"port": 4567}]
++      }
++    ]
++  }
+```
