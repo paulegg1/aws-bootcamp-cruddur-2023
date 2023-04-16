@@ -1035,7 +1035,17 @@ Now that the backend is working, we can start on the frontend.
 
 ### TASK DEFINITION ###
 
-We need to create a production version of the frontend Dockerfile that will use static build assets.  This is *instead* of the react-scripts usage (see package.json). 
+We need to create a production version of the frontend Dockerfile that will use static build assets.  This is *instead* of the react-scripts usage (see package.json). We will use ngnix for this, note the ngnix references in the Dockerfile that will copy the required files from build and a ngnix.conf file into the nginx etc locations.
+
+eg:
+
+```dockerfile
+...
+# --from build is coming from the Base Image
+COPY --from=build /frontend-react-js/build /usr/share/nginx/html
+COPY --from=build /frontend-react-js/nginx.conf /etc/nginx/nginx.conf
+...
+```
 
 To pass the build arguments in at `docker build` time, we need to use the `--build-arg` syntax.  It permits passing of values into the ARGs that you will see in the Dockerfile:
 
@@ -1106,6 +1116,67 @@ docker build \
 -f Dockerfile.prod \
 .
 ```
+
+The nginx conf file needs dropping into place (frontend-react-js/nginx.conf):
+
+```nginx
+# Set the worker processes
+worker_processes 1;
+
+# Set the events module
+events {
+  worker_connections 1024;
+}
+
+# Set the http module
+http {
+  # Set the MIME types
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  # Set the log format
+  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+  # Set the access log
+  access_log  /var/log/nginx/access.log main;
+
+  # Set the error log
+  error_log /var/log/nginx/error.log;
+
+  # Set the server section
+  server {
+    # Set the listen port
+    listen 3000;
+
+    # Set the root directory for the app
+    root /usr/share/nginx/html;
+
+    # Set the default file to serve
+    index index.html;
+
+    location / {
+        # First attempt to serve request as file, then
+        # as directory, then fall back to redirecting to index.html
+        try_files $uri $uri/ $uri.html /index.html;
+    }
+
+    # Set the error page
+    error_page  404 /404.html;
+    location = /404.html {
+      internal;
+    }
+
+    # Set the error page for 500 errors
+    error_page  500 502 503 504  /50x.html;
+    location = /50x.html {
+      internal;
+    }
+  }
+}
+```
+
 
 SERVICE 
 
