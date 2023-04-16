@@ -1319,3 +1319,7 @@ SECURITYGROUPRULES              Cruddur-ALB     3000    sg-08e0ef94ae963f863    
 ```
 
 Once all that is done, Both BE + FE services should be running.
+
+
+
+![Both services work ](assets/ecs-both-services-running.png)
