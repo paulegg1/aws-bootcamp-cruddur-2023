@@ -861,7 +861,7 @@ http://54.91.108.254:4567/api/activities/home
 
 ## Load Balancer ##
 
-We need to create an ALB, either via the console or via CLI/other methods.  I created this in Terraform and I've create a folder in this repo to hold that TF.  See `terraform` folder.  Here's an excerpt (at this stage no TG attachments to instances / IPs are done, they are commented):
+We need to create an ALB, either via the console or via CLI/other methods.  I created this in Terraform and I've create a folder in this repo to hold that TF.  See `terraform` folder, file `05-lb.tf`.  Here's an excerpt (at this stage no TG attachments to instances / IPs are done, they are commented):
 
 ```terraform
 resource "aws_lb" "cruddur-alb" {
@@ -989,4 +989,129 @@ resource "aws_security_group" "allow_internet" {
     Name = "allow_internet"
   }
 }
+```
+
+
+## Create Service Entry for LB ##
+
+This will allow the ECS service to be linked to the newly created ALB
+
+In service-backend-flask.json:
+
+```json
+    "enableExecuteCommand": true,
+    "loadBalancers": [
+      {
+        "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:540771840545:targetgroup/cruddur-alb-be-tg/98ee41bfcb8175cd",
+        "containerName": "backend-flask",
+        "containerPort": 4567
+      }
+    ],
+    "networkConfiguration": {
+```
+
+Delete the ECS service backend-flask and re-create it.
+
+```sh
+aws ecs create-service --cli-input-json file://aws/json/service-backend-flask.json
+```
+
+Once this the service is up again and showing healthy, the backend service should be available via the ALB.  Check the health also in the target groups section (EC2 / LoadBalancer)
+
+This is a quick way to test:
+
+```sh
+$ curl http://cruddur-alb-1729793562.us-east-1.elb.amazonaws.com:4567/api/health-check
+{
+  "success": true
+}
+```
+
+If you want to turn access logs on for the ALB, go to the ALB and select attributes -> edit, scroll down to monitoring and you'll see a switch for access logs.  You will need to specify or create an S3 bucket to contain the logs.
+
+## Frontend now !! ##
+
+Now that the backend is working, we can start on the frontend.
+
+### TASK DEFINITION ###
+
+We need to create a production version of the frontend Dockerfile that will use static build assets.  This is *instead* of the react-scripts usage (see package.json). 
+
+To pass the build arguments in at `docker build` time, we need to use the `--build-arg` syntax.  It permits passing of values into the ARGs that you will see in the Dockerfile:
+
+```dockerfile
+ARG REACT_APP_BACKEND_URL
+ARG REACT_APP_AWS_PROJECT_REGION
+ARG REACT_APP_AWS_COGNITO_REGION
+ARG REACT_APP_AWS_USER_POOLS_ID
+ARG REACT_APP_CLIENT_ID
+```
+
+The build command passess this in as show here (this is just an example, do not try to run/use):
+
+```sh
+docker build \
+--build-arg REACT_APP_BACKEND_URL=<value> \
+--build-arg REACT_APP_AWS_PROJECT_REGION=<value> \
+--build-arg REACT_APP_AWS_COGNITO_REGION=<value> \
+--build-arg REACT_APP_AWS_USER_POOLS_ID=<value> \
+--build-arg REACT_APP_CLIENT_ID=<value> \
+...
+...
+```
+
+The Dockerfile (see frontend-react-js/Dockerfile.prod) then, looks like this:
+
+```dockerfile
+# Base Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FROM node:16.18 AS build
+
+ARG REACT_APP_BACKEND_URL
+ARG REACT_APP_AWS_PROJECT_REGION
+ARG REACT_APP_AWS_COGNITO_REGION
+ARG REACT_APP_AWS_USER_POOLS_ID
+ARG REACT_APP_CLIENT_ID
+
+ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
+ENV REACT_APP_AWS_PROJECT_REGION=$REACT_APP_AWS_PROJECT_REGION
+ENV REACT_APP_AWS_COGNITO_REGION=$REACT_APP_AWS_COGNITO_REGION
+ENV REACT_APP_AWS_USER_POOLS_ID=$REACT_APP_AWS_USER_POOLS_ID
+ENV REACT_APP_CLIENT_ID=$REACT_APP_CLIENT_ID
+
+COPY . ./frontend-react-js
+WORKDIR /frontend-react-js
+RUN npm install
+RUN npm run build
+
+# New Base Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FROM nginx:1.23.3-alpine
+
+# --from build is coming from the Base Image
+COPY --from=build /frontend-react-js/build /usr/share/nginx/html
+COPY --from=build /frontend-react-js/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 3000
+```
+
+The actual build command:
+
+```sh
+docker build \
+--build-arg REACT_APP_BACKEND_URL="https://4567-$GITPOD_WORKSPACE_ID.$GITPOD_WORKSPACE_CLUSTER_HOST" \
+--build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_USER_POOLS_ID="us-east-1_dh0ExXiP1" \
+--build-arg REACT_APP_CLIENT_ID="63q2l315cgptsl5mrauqbvab7a" \
+-t frontend-react-js \
+-f Dockerfile.prod \
+.
+```
+
+SERVICE 
+
+
+The command we'll need, once we have the json ready:
+
+```sh
+aws ecs create-service --cli-input-json file://aws/json/service-frontend-react-js.json
 ```
