@@ -1033,6 +1033,44 @@ If you want to turn access logs on for the ALB, go to the ALB and select attribu
 
 Now that the backend is working, we can start on the frontend.
 
+## Create the frontend repo ##
+
+Run the following and create the front end repository.
+
+```sh
+aws ecr create-repository \
+  --repository-name frontend-react-js \
+  --image-tag-mutability MUTABLE
+```
+This should dump out some json to show the repo created ok:
+
+```sh
+{
+    "repository": {
+        "repositoryArn": "arn:aws:ecr:us-east-1:540771840545:repository/frontend-react-js",
+        "registryId": "540771840545",
+        "repositoryName": "frontend-react-js",
+        "repositoryUri": "540771840545.dkr.ecr.us-east-1.amazonaws.com/frontend-react-js",
+        "createdAt": "2023-04-16T19:01:33+00:00",
+        "imageTagMutability": "MUTABLE",
+        "imageScanningConfiguration": {
+            "scanOnPush": false
+        },
+        "encryptionConfiguration": {
+            "encryptionType": "AES256"
+        }
+    }
+}
+```
+
+We will need a URL to refer to this, stored conveniently in an env VAR:
+
+```sh
+export ECR_FRONTEND_REACT_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/frontend-react-js"
+echo $ECR_FRONTEND_REACT_URL
+```
+
+
 ### TASK DEFINITION ###
 
 We need to create a production version of the frontend Dockerfile that will use static build assets.  This is *instead* of the react-scripts usage (see package.json). We will use ngnix for this, note the ngnix references in the Dockerfile that will copy the required files from build and a ngnix.conf file into the nginx etc locations.
@@ -1103,19 +1141,7 @@ COPY --from=build /frontend-react-js/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 3000
 ```
 
-The actual build command:
 
-```sh
-docker build \
---build-arg REACT_APP_BACKEND_URL="https://4567-$GITPOD_WORKSPACE_ID.$GITPOD_WORKSPACE_CLUSTER_HOST" \
---build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
---build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
---build-arg REACT_APP_AWS_USER_POOLS_ID="us-east-1_dh0ExXiP1" \
---build-arg REACT_APP_CLIENT_ID="63q2l315cgptsl5mrauqbvab7a" \
--t frontend-react-js \
--f Dockerfile.prod \
-.
-```
 
 The nginx conf file needs dropping into place (frontend-react-js/nginx.conf):
 
@@ -1176,13 +1202,120 @@ http {
   }
 }
 ```
+You will also need to grab the URL of the load balancer `https://cruddur-alb-1729793562.us-east-1.elb.amazonaws.com:4567"`
+
+The actual build command, run this:
+
+```sh
+docker build \
+--build-arg REACT_APP_BACKEND_URL="https://cruddur-alb-1729793562.us-east-1.elb.amazonaws.com:4567" \
+--build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_USER_POOLS_ID="us-east-1_dh0ExXiP1" \
+--build-arg REACT_APP_CLIENT_ID="63q2l315cgptsl5mrauqbvab7a" \
+-t frontend-react-js \
+-f Dockerfile.prod \
+.
+```
+
+That seem to work well for me, here's the truncated end of the output:
+
+```sh
+Status: Downloaded newer image for nginx:1.23.3-alpine
+ ---> 2bc7edbc3cf2
+Step 17/19 : COPY --from=build /frontend-react-js/build /usr/share/nginx/html
+ ---> 4db04b9f8ed2
+Step 18/19 : COPY --from=build /frontend-react-js/nginx.conf /etc/nginx/nginx.conf
+ ---> 813c97857cc6
+Step 19/19 : EXPOSE 3000
+ ---> Running in 2d2e7cbe840a
+Removing intermediate container 2d2e7cbe840a
+ ---> 922e727d99af
+Successfully built 922e727d99af
+Successfully tagged frontend-react-js:latest
+```
+
+Now that's built, tag it and push it to the new ECR repo.  You will need the env VAR set, so double check this:
+
+```sh
+export ECR_FRONTEND_REACT_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/frontend-react-js"
+echo $ECR_FRONTEND_REACT_URL
+```
+
+Double check that you're logged into the ECR service, if unsure, just run:
+
+```sh
+aws ecr get-login-password --region $AWS_DEFAULT_REGION |  docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+```
 
 
-SERVICE 
+Then
 
+``sh
+docker tag frontend-react-js:latest $ECR_FRONTEND_REACT_URL:latest
+
+docker push $ECR_FRONTEND_REACT_URL:latest
+```
+Success looks like:
+
+```sh
+$ docker push $ECR_FRONTEND_REACT_URL:latest
+The push refers to repository [540771840545.dkr.ecr.us-east-1.amazonaws.com/frontend-react-js]
+3787701c610c: Preparing 
+b28930666ed0: Preparing 
+042cd3f87f43: Preparing 
+f1bee861c2ba: Preparing 
+c4d67a5827ca: Preparing 
+152a948bab3b: Waiting 
+5e59460a18a3: Waiting 
+d8a5a02a8c2d: Waiting 
+7cd52847ad77: Waiting 
+no basic auth credentials
+```
+
+Do not forget to run the creation of the task definition:
+
+```sh
+aws ecs register-task-definition --cli-input-json file://aws/task-definitions/frontend-react-js.json
+```
+
+### Frontend SERVICE DEFINITION ### 
+
+So, we need to configure the service for the frontend.  There is a JSON file for this in `aws/json/` called `service-frontend-js.json`.  This is similar to the backend service, but it is important to specify the correct target group in the load balancer section, for the FE, it is this target group:
+
+```sh
+arn:aws:elasticloadbalancing:us-east-1:540771840545:targetgroup/cruddur-alb-fe-tg/e1e9f0f65139f71e
+```
+
+I won't put the full file contents here, go and view the source. The LB section within though, looks like this:
+
+```json
+...
+    "loadBalancers": [
+        {
+          "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:540771840545:targetgroup/cruddur-alb-fe-tg/e1e9f0f65139f71e",
+          "containerName": "frontend-react-js",
+          "containerPort": 3000
+        }
+      ],
+...
+```
 
 The command we'll need, once we have the json ready:
 
 ```sh
 aws ecs create-service --cli-input-json file://aws/json/service-frontend-react-js.json
 ```
+
+That should launch the new service in the Cruddur cluster for the frontend react.  Go check it in the console, you should see it showing that last deployment status is `in progress`.  Wait, refresh and wait some more.  It should reach `completed` status.
+
+You will need to add port 3000 to the crud-srv-sg Security Group so that it looks like this (this is in addition to 4567):
+
+```sh
+$ aws ec2 describe-security-group-rules     --filter Name="group-id",Values="sg-08e0ef94ae963f863" --output text
+...
+SECURITYGROUPRULES              Cruddur-ALB     3000    sg-08e0ef94ae963f863    540771840545    tcp     False   sgr-0769e36ad366bf504   3000
+...
+```
+
+Once all that is done, Both BE + FE services should be running.
