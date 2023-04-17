@@ -17,4 +17,4 @@ fi
 
 aws ecs execute-command --region $AWS_DEFAULT_REGION \
 --cluster cruddur --task $1 --container $2 \
---command "/bin/bash" --interactive
+--command "/bin/sh" --interactive
