@@ -1515,3 +1515,12 @@ Access to fetch at 'https://api.cruddur.paulegg.com/api/activities/home' from or
 UPDATE :  We needed the protocols in the ENV VARs that are used in the resources/CORS definitions in app.py.  Needed to add `https://` in the BE task definition and redeploy.
 
 This then works, I have a working app at cruddur.paulegg.com.
+
+
+## cost saving ##
+
+I am away for a few days and so I want to stop costs.  
+
+- ECS tasks - I set the desired quantities to 0.   
+- RDS - Stopped temporarily for 7 days.
+- ALB - Destroyed using Terraform.  I can recreate this when required.
