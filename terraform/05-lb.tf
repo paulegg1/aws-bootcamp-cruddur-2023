@@ -95,6 +95,52 @@ resource "aws_lb_listener" "cruddur-alb-listner-3000" {
   }
 }
 
+resource "aws_lb_listener" "cruddur-alb-listner-80" {
+  load_balancer_arn = aws_lb.cruddur-alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "cruddur-alb-listner-443" {
+  load_balancer_arn = aws_lb.cruddur-alb.arn
+  port              = 443
+  protocol          = "HTTPS"
+  certificate_arn   = "arn:aws:acm:us-east-1:540771840545:certificate/b5db34a2-025e-4a4f-a434-27017ec4346a"
+  ssl_policy   = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.cruddur-alb-fe-tg.arn
+  }
+}
+
+
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.cruddur-alb-listner-443.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.cruddur-alb-be-tg.arn
+  }
+
+  condition {
+    host_header {
+      values = ["api.cruddur.paulegg.com"]
+    }
+  }
+}
+
 resource "aws_security_group" "allow_internet" {
   name        = "cruddur-alb-sg"
   description = "Allow internet HTTP inbound traffic"

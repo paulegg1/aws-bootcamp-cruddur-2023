@@ -1323,3 +1323,204 @@ Once all that is done, Both BE + FE services should be running.
 
 
 ![Both services work ](assets/ecs-both-services-running.png)
+
+# Domain Name #
+
+I had an old holding page at cruddur.paulegg.com that just redirected using an alias to a static s3 page in bucket cruddur.paulegg.com.  I requested an ACM certificate for this, using DNS validation using the console.  Using ACM and Route53 together is nice because it creates the DNS CNAME validation entries for you at the click of a button, all from the ACM console.
+
+The DNS record in Route53 (for me this is cruddur.paulegg.com ) will need to be updated to point to the ALB:
+
+![R53 and ALB ](assets/r53-select-alb.png)
+
+Do the same for 'api.cruddur.paulegg.com'
+
+
+## LB routing rules ##
+
+First we need to fix the listener routing rules on the ALB that are currently set to plain text HTTP on ports 3000 and 4567.  This can be done in the console, but I updated the TF and ran it through, below are the additions to 05-lb.tf:
+
+```terraform
+...
+resource "aws_lb_listener" "cruddur-alb-listner-80" {
+  load_balancer_arn = aws_lb.cruddur-alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "cruddur-alb-listner-443" {
+  load_balancer_arn = aws_lb.cruddur-alb.arn
+  port              = 443
+  protocol          = "HTTPS"
+  certificate_arn   = "arn:aws:acm:us-east-1:540771840545:certificate/b5db34a2-025e-4a4f-a434-27017ec4346a"
+  security_policy   = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.cruddur-alb-fe-tg.arn
+  }
+}
+...
+```
+
+Here's the output for the plan:
+
+```sh
+Terraform will perform the following actions:
+
+  # aws_lb_listener.cruddur-alb-listner-443 will be created
+  + resource "aws_lb_listener" "cruddur-alb-listner-443" {
+      + arn               = (known after apply)
+      + certificate_arn   = "arn:aws:acm:us-east-1:540771840545:certificate/b5db34a2-025e-4a4f-a434-27017ec4346a"
+      + id                = (known after apply)
+      + load_balancer_arn = "arn:aws:elasticloadbalancing:us-east-1:540771840545:loadbalancer/app/cruddur-alb/0889dfcc750b3120"
+      + port              = 443
+      + protocol          = "HTTPS"
+      + ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+      + tags_all          = (known after apply)
+
+      + default_action {
+          + order            = (known after apply)
+          + target_group_arn = "arn:aws:elasticloadbalancing:us-east-1:540771840545:targetgroup/cruddur-alb-fe-tg/e1e9f0f65139f71e"
+          + type             = "forward"
+        }
+    }
+
+  # aws_lb_listener.cruddur-alb-listner-80 will be created
+  + resource "aws_lb_listener" "cruddur-alb-listner-80" {
+      + arn               = (known after apply)
+      + id                = (known after apply)
+      + load_balancer_arn = "arn:aws:elasticloadbalancing:us-east-1:540771840545:loadbalancer/app/cruddur-alb/0889dfcc750b3120"
+      + port              = 80
+      + protocol          = "HTTP"
+      + ssl_policy        = (known after apply)
+      + tags_all          = (known after apply)
+
+      + default_action {
+          + order = (known after apply)
+          + type  = "redirect"
+
+          + redirect {
+              + host        = "#{host}"
+              + path        = "/#{path}"
+              + port        = "443"
+              + protocol    = "HTTPS"
+              + query       = "#{query}"
+              + status_code = "HTTP_301"
+            }
+        }
+    }
+```
+
+## API Redirect Rule ##
+
+We will also need a redirect rule for the backend to be reached via 'api.cruddur.paulegg.com'.  This can be created in the console, but again, to make sure I can tear down and recreate my ALB due to cost, I am doing this via TF:
+
+
+```terraform
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.cruddur-alb-listner-443.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.cruddur-alb-be-tg.arn
+  }
+
+  condition {
+    host_header {
+      values = ["api.cruddur.paulegg.com"]
+    }
+  }
+}
+```
+
+Testing:
+
+```sh
+$ curl https://api.cruddur.paulegg.com/api/health-check
+{
+  "success": true
+}
+```
+
+## CORS ##
+
+The original Origins we set in the env vars for the BACKEND_URL and FRONTEND_URL were `*`.   This was useful to get things working but now that we have proper domain names we need to tighten things up and put in the correct values.
+
+Start with the task-definition for backend flash (`aws/task-definitions/backend-flask.json`)
+
+Change these lines:
+
+```json
+...
+          {"name": "FRONTEND_URL", "value": "https://cruddur.paulegg.com"},
+          {"name": "BACKEND_URL", "value": "https://api.cruddur.paulegg.com"},
+...
+```
+
+Then, recreate the backend task definition:
+
+```sh
+aws ecs register-task-definition --cli-input-json file://aws/task-definitions/backend-flask.json
+```
+
+Now, because we're tigtening CORS and we have a domain name, we need to redploy the front end, build like below where we swap `https://cruddur-alb-1729793562.us-east-1.elb.amazonaws.com:4567` for `https://api.cruddur.paulegg.com`:
+
+
+```sh
+docker build \
+--build-arg REACT_APP_BACKEND_URL="https://api.cruddur.paulegg.com" \
+--build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_USER_POOLS_ID="us-east-1_dh0ExXiP1" \
+--build-arg REACT_APP_CLIENT_ID="63q2l315cgptsl5mrauqbvab7a" \
+-t frontend-react-js \
+-f Dockerfile.prod \
+.
+```
+
+Then Tag and push the image to the ECR as before.
+
+```sh
+docker tag frontend-react-js:latest $ECR_FRONTEND_REACT_URL:latest
+docker push $ECR_FRONTEND_REACT_URL:latest
+```
+
+### Redeploy backend-flask ###
+
+Next, go to ECS and force a re-deployment of the backend-flask container, making sure to select the LATEST Revision.
+
+### Redeploy frontend-flask ###
+
+Next, go to ECS and force a re-deployment of the frontend-react-js container.
+
+#### CORS Testing ####
+
+Damn, an error for CORS straight away:
+
+```sh
+Access to fetch at 'https://api.cruddur.paulegg.com/api/activities/home' from origin 'https://cruddur.paulegg.com' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+```
+
+UPDATE :  We needed the protocols in the ENV VARs that are used in the resources/CORS definitions in app.py.  Needed to add `https://` in the BE task definition and redeploy.
+
+This then works, I have a working app at cruddur.paulegg.com.
+
+
+## cost saving ##
+
+I am away for a few days and so I want to stop costs.  
+
+- ECS tasks - I set the desired quantities to 0.   
+- RDS - Stopped temporarily for 7 days.
+- ALB - Destroyed using Terraform.  I can recreate this when required.
