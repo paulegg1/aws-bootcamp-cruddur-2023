@@ -1580,3 +1580,38 @@ So, now to start considering security a little more carefully.  The first task i
 
 ...
 ```
+
+## Aliases and Functions ##
+
+A quick aside.  
+
+To make life easier I've started to define functions for length AWS commands.  I've added a gitpod.yml task that sources my defined functions:
+
+```sh
+  - name: shell-func
+    command: |
+    source $THEIA_WORKSPACE_ROOT/aliases
+```
+
+Here's the first, very simple function.  I could add error checking later:
+
+```sh
+$ more aliases
+ecr-login () {
+  aws ecr get-login-password --region $AWS_DEFAULT_REGION |  docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+}
+```
+
+Which allows the follow behaviour:
+
+```sh
+gitpod /workspace/aws-bootcamp-cruddur-2023/backend-flask (main) $ ecr-login 
+WARNING! Your password will be stored unencrypted in /home/gitpod/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+gitpod /workspace/aws-bootcamp-cruddur-2023/backend-flask (main) $ 
+```
+
+Much easier!
