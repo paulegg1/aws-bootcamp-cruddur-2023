@@ -1524,3 +1524,27 @@ I am away for a few days and so I want to stop costs.
 - ECS tasks - I set the desired quantities to 0.   
 - RDS - Stopped temporarily for 7 days.
 - ALB - Destroyed using Terraform.  I can recreate this when required.
+
+On return, these are the required tasks:
+
+```sh 
+
+1.. Restarted RDS PostgreSQL
+
+2.. ALB.  Remember that the service entry for the ECS services contain the ALB ARN.  Also need to check the SG rules (Cruddur-ALB)
+  - Let's start with TF'ing the ALB into existence again.
+
+  # aws_lb.cruddur-alb will be created
+  # aws_lb_listener.cruddur-alb-listner-3000 will be created
+  # aws_lb_listener.cruddur-alb-listner-443 will be created
+  # aws_lb_listener.cruddur-alb-listner-4567 will be created
+  # aws_lb_listener.cruddur-alb-listner-80 will be created
+  # aws_lb_listener_rule.api will be created
+Plan: 6 to add, 0 to change, 0 to destroy.
+
+
+3..  Set the desired tasks to 1 again in the ECS services.  The service definitions refer to the _target_groups_, not the ALB ARN, so no changes are needed. 
+
+4.. The R53 DNS record was an alias to the name of the previous ALB. Update that.
+
+```
