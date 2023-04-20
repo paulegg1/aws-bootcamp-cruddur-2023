@@ -1,7 +1,49 @@
+
+export ECR_BACKEND_FLASK_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/backend-flask"
+echo $ECR_BACKEND_FLASK_URL
+
+export ECR_FRONTEND_REACT_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/frontend-react-js"
+echo $ECR_FRONTEND_REACT_URL
+
+export ECR_PYTHON_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cruddur-python"
+echo $ECR_PYTHON_URL
+
 ecr-login () {
   aws ecr get-login-password --region $AWS_DEFAULT_REGION |  docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 }
 
+build-be-prod () {
+ #cd /workspace/aws-bootcamp-cruddur-2023/backend-flask/
+  BACKEND_PATH=$THEIA_WORKSPACE_ROOT/backend-flask
+  echo $BACKEND_PATH
+  cd $BACKEND_PATH
+  docker build -t backend-flask-prod -f Dockerfile.prod .
+}
+
+build-fe-prod () {
+  FRONTEND_REACT_JS_PATH=$THEIA_WORKSPACE_ROOT/frontend-react-js
+  echo $FRONTEND_REACT_JS_PATH
+
+  docker build \
+  --build-arg REACT_APP_BACKEND_URL="https://api.cruddur.com" \
+  --build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
+  --build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
+  --build-arg REACT_APP_AWS_USER_POOLS_ID="${REACT_APP_AWS_USER_POOLS_ID}" \
+  --build-arg REACT_APP_CLIENT_ID="${REACT_APP_CLIENT_ID}" \
+  -t frontend-react-js \
+  -f "$FRONTEND_REACT_JS_PATH/Dockerfile.prod" \
+  "$FRONTEND_REACT_JS_PATH/."
+}
+
+push-be-prod () {
+  docker tag backend-flask-prod:latest $ECR_BACKEND_FLASK_URL:latest
+  docker push $ECR_BACKEND_FLASK_URL:latest
+}
+
+push-fe-prod () {
+  docker tag frontend-react-js:latest $ECR_FRONTEND_REACT_URL:latest
+  docker push $ECR_FRONTEND_REACT_URL:latest
+}
 run-be-local () {
 docker run --rm \
 -p 4567:4567 \
@@ -23,3 +65,17 @@ docker run --rm \
 -it backend-flask-prod
 }
 
+
+force-be-deploy () {
+  BE_TASK_DEF=$( aws ecs describe-task-definition --task-definition backend-flask --query 'taskDefinition.taskDefinitionArn' --output text )
+  aws ecs describe-services --cluster cruddur --services backend-flask --query 'services[0].deployments' --output table
+  aws ecs update-service --cluster cruddur --service backend-flask --task-definition $BE_TASK_DEF --force-new-deployment
+  aws ecs describe-services --cluster cruddur --services backend-flask --query 'services[0].deployments' --output table
+}
+
+
+force-fe-deploy () {
+  FE_TASK_DEF=$( aws ecs describe-task-definition --task-definition frontend-react-js --query 'taskDefinition.taskDefinitionArn' --output text )
+  aws ecs update-service --cluster cruddur --service frontend-react-js --task-definition $FE_TASK_DEF --force-new-deployment
+
+}

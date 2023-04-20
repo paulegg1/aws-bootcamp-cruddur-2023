@@ -1583,6 +1583,37 @@ So, now to start considering security a little more carefully.  The first task i
 
 ## Build and run a local prod BE container ##
 
+To build a production version of the container we need a new Dockerfile.prod for the backend:
+
+```Dockerfile
+FROM 540771840545.dkr.ecr.us-east-1.amazonaws.com/cruddur-python:3.10-slim-buster
+
+WORKDIR /backend-flask
+
+COPY requirements.txt requirements.txt
+
+RUN pip3 install -r requirements.txt
+
+COPY . .
+
+EXPOSE ${PORT}
+# python3 -m flask run --host=0.0.0.0 --port=4567
+CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=4567", "--no-debug", "--no-debugger", "--no-reload"]
+#COPY runflask.sh runflask.sh
+#CMD sh runflask.sh
+```
+
+Note the `--no-debug`, `--no-debugger` and `--no-reload` options.  These are important to stop real world users debugging and potentially running python code remotely.  It secures your service.
+
+We need to build this:
+
+```sh
+
+ cd /workspace/aws-bootcamp-cruddur-2023/backend-flask/
+ docker build -t backend-flask-prod -f Dockerfile.prod .
+
+```
+Run locally to test:
 
 ```sh
 docker run --rm \
@@ -1605,6 +1636,28 @@ docker run --rm \
 -it backend-flask-prod
 ```
 
+
+Push it to ECR:
+
+```sh
+export ECR_BACKEND_FLASK_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/backend-flask"
+echo $ECR_BACKEND_FLASK_URL
+
+export ECR_PYTHON_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cruddur-python"
+echo $ECR_PYTHON_URL
+
+docker tag backend-flask-prod:latest $ECR_BACKEND_FLASK_URL:latest
+docker push $ECR_BACKEND_FLASK_URL:latest
+
+```
+
+Force a new deployment :
+
+```sh
+$ BE_TASK_DEF=$( aws ecs describe-task-definition --task-definition backend-flask --query 'taskDefinition.taskDefinitionArn' --output text )
+
+$ aws ecs update-service --cluster cruddur --service backend-flask --task-definition $BE_TASK_DEF --force-new-deployment
+```
 
 
 
@@ -1629,12 +1682,15 @@ $ more aliases
 ecr-login () {
   aws ecr get-login-password --region $AWS_DEFAULT_REGION |  docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 }
+
+...
+
 ```
 
 Which allows the follow behaviour:
 
 ```sh
-gitpod /workspace/aws-bootcamp-cruddur-2023/backend-flask (main) $ ecr-login 
+$ ecr-login 
 WARNING! Your password will be stored unencrypted in /home/gitpod/.docker/config.json.
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store

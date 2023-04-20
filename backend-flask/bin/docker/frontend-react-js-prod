@@ -1,0 +1,14 @@
+#!/bin/bash
+
+FRONTEND_REACT_JS_PATH=$THEIA_WORKSPACE_ROOT/frontend-react-js
+echo $FRONTEND_REACT_JS_PATH
+
+docker build \
+--build-arg REACT_APP_BACKEND_URL="https://api.cruddur.com" \
+--build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_USER_POOLS_ID="${REACT_APP_AWS_USER_POOLS_ID}" \
+--build-arg REACT_APP_CLIENT_ID="${REACT_APP_CLIENT_ID}" \
+-t frontend-react-js \
+-f "$FRONTEND_REACT_JS_PATH/Dockerfile.prod" \
+"$FRONTEND_REACT_JS_PATH/."
