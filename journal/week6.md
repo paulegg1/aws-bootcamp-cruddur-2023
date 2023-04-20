@@ -1581,6 +1581,35 @@ So, now to start considering security a little more carefully.  The first task i
 ...
 ```
 
+## Build and run a local prod BE container ##
+
+
+```sh
+docker run --rm \
+-p 4567:4567 \
+-e AWS_ENDPOINT_URL="http://dynamodb-local:8000" \
+-e CONNECTION_URL="postgresql://postgres:password@db:5432/cruddur" \
+-e FRONTEND_URL="https://3000-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}" \
+-e BACKEND_URL="https://4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}" \
+-e OTEL_SERVICE_NAME='backend-flask' \
+-e OTEL_EXPORTER_OTLP_ENDPOINT="https://api.honeycomb.io" \
+-e OTEL_EXPORTER_OTLP_HEADERS="x-honeycomb-team=${HONEYCOMB_API_KEY}" \
+-e AWS_XRAY_URL="*4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}*" \
+-e AWS_XRAY_DAEMON_ADDRESS="xray-daemon:2000" \
+-e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
+-e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+-e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+-e ROLLBAR_ACCESS_TOKEN="${ROLLBAR_ACCESS_TOKEN}" \
+-e AWS_COGNITO_USER_POOL_ID="${AWS_COGNITO_USER_POOL_ID}" \
+-e AWS_COGNITO_USER_POOL_CLIENT_ID="${REACT_APP_CLIENT_ID}" \
+-it backend-flask-prod
+```
+
+
+
+
+
+
 ## Aliases and Functions ##
 
 A quick aside.  
@@ -1615,3 +1644,4 @@ gitpod /workspace/aws-bootcamp-cruddur-2023/backend-flask (main) $
 ```
 
 Much easier!
+

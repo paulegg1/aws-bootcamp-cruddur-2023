@@ -39,4 +39,4 @@ tasks:
       cd backend-flask
   - name: shell-func
     command: |
-    source $THEIA_WORKSPACE_ROOT/aliases
+      source "$THEIA_WORKSPACE_ROOT/aliases"
