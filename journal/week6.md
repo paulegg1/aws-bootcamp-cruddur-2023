@@ -1551,7 +1551,7 @@ Plan: 6 to add, 0 to change, 0 to destroy.
 
 # Securing Flask #
 
-So, now to start considering security a little more carefully.  The first task is to (for now at least) limit the access to our application frontend to my local IP only.  This is done by editing the internet security group that currently permits 0.0.0.0/0 to the http/s ports of the front end. I control these SGs using Terraform, so this is a quick TF code change and run `terraform plan` / `terraform apply`
+So, now to start considering security a little more carefully.  The first task is to (for now at least) limit the access to our application frontend to my local IP only.  This is done by editing the internet security group that currently permits 0.0.0.0/0 to the http/s ports of the front end. I control these SGs using Terraform, so this is a quick TF code change and run `terraform plan` / `terraform apply`.  (Dummy IPs used below)
 
 ```diff
 
@@ -1566,7 +1566,7 @@ So, now to start considering security a little more carefully.  The first task i
      to_port          = 80
      protocol         = "tcp"
 -    cidr_blocks      = ["0.0.0.0/0"]
-+    cidr_blocks      = ["81.152.191.17/32"]
++    cidr_blocks      = ["1.2.3.4/32"]
    }
 
    ingress {
@@ -1575,7 +1575,7 @@ So, now to start considering security a little more carefully.  The first task i
      to_port          = 443
      protocol         = "tcp"
 -    cidr_blocks      = ["0.0.0.0/0"]
-+    cidr_blocks      = ["81.152.191.17/32"]
++    cidr_blocks      = ["1.2.3.4/32"]
    }
 
 ...

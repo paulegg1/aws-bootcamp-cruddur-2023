@@ -151,7 +151,7 @@ resource "aws_security_group" "allow_internet" {
     from_port        = 80
     to_port          = 80
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
+    cidr_blocks      = ["1.2.3.4/0"]
   }
 
   ingress {
@@ -159,24 +159,7 @@ resource "aws_security_group" "allow_internet" {
     from_port        = 443
     to_port          = 443
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description      = "TEMP 4567 from Any"
-    from_port        = 4567
-    to_port          = 4567
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-
-  
-  ingress {
-    description      = "TEMP 3000 from Any"
-    from_port        = 3000
-    to_port          = 3000
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
+    cidr_blocks      = ["1.2.3.4/0"]
   }
 
   egress {
