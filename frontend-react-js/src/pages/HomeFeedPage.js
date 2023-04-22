@@ -8,7 +8,7 @@ import ActivityForm from '../components/ActivityForm';
 import ReplyForm from '../components/ReplyForm';
 
 // [TODO] Authenication
-import checkAuth from '../lib/CheckAuth';
+import { checkAuth, getAccessToken } from '../lib/CheckAuth';
 // import Cookies from 'js-cookie'
 
 export default function HomeFeedPage() {
@@ -25,9 +25,14 @@ export default function HomeFeedPage() {
   const loadData = async () => {
     try {
       const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/activities/home`
+      // getAccessToken() does setItem for us into localstorage
+      await getAccessToken()
+      // get the access token
+      const access_token = localStorage.getItem("access_token")
+      console.log('access_token', access_token)
       const res = await fetch(backend_url, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem("access_token")}`
+          Authorization: `Bearer ${access_token}`
         },
         method: "GET"
       });
