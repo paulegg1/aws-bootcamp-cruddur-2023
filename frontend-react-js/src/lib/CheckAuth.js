@@ -1,5 +1,4 @@
 import { Auth } from 'aws-amplify';
-import { resolvePath } from 'react-router-dom';
 
 
 export async function getAccessToken(){
