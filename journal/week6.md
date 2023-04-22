@@ -1703,4 +1703,40 @@ gitpod /workspace/aws-bootcamp-cruddur-2023/backend-flask (main) $
 
 Much easier!
 
+### More Functions ###
 
+I've added functions for building, pushing and deploying both the FE and the BE.  To give an example, the process for building, pushing and deploying a new BE build is:
+
+```sh
+   $  build-be-prod 
+   $  push-be-prod 
+   $  force-be-deploy 
+```
+
+Here's the functions for BE:
+
+```sh
+
+build-be-prod () 
+{ 
+    BACKEND_PATH=$THEIA_WORKSPACE_ROOT/backend-flask;
+    echo $BACKEND_PATH;
+    cd $BACKEND_PATH;
+    docker build -t backend-flask-prod -f Dockerfile.prod .
+}
+
+push-be-prod () 
+{ 
+    docker tag backend-flask-prod:latest $ECR_BACKEND_FLASK_URL:latest;
+    docker push $ECR_BACKEND_FLASK_URL:latest
+}
+
+
+force-be-deploy () 
+{ 
+    BE_TASK_DEF=$( aws ecs describe-task-definition --task-definition backend-flask --query 'taskDefinition.taskDefinitionArn' --output text );
+    aws ecs describe-services --cluster cruddur --services backend-flask --query 'services[0].deployments' --output table;
+    aws ecs update-service --cluster cruddur --service backend-flask --task-definition $BE_TASK_DEF --force-new-deployment;
+    aws ecs describe-services --cluster cruddur --services backend-flask --query 'services[0].deployments' --output table
+}
+```
