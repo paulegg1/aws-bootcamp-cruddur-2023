@@ -1665,6 +1665,14 @@ This all worked.  In fact, I surprised to see that even new messaging worked jus
 ![PROD Deployed works ](assets/prod-message-works.png)
 
 
+
+# Cognito Refresh Token #
+
+Amplify refresh Cognito Token...
+
+
+
+
 ## Aliases and Functions ##
 
 A quick aside.  
