@@ -1660,7 +1660,9 @@ $ aws ecs update-service --cluster cruddur --service backend-flask --task-defini
 ```
 
 
+This all worked.  In fact, I surprised to see that even new messaging worked just fine:
 
+![PROD Deployed works ](assets/prod-message-works.png)
 
 
 ## Aliases and Functions ##
