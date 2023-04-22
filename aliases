@@ -8,20 +8,22 @@ echo $ECR_FRONTEND_REACT_URL
 export ECR_PYTHON_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cruddur-python"
 echo $ECR_PYTHON_URL
 
+export GIT_ROOT=$( git rev-parse --show-toplevel )
+
 ecr-login () {
   aws ecr get-login-password --region $AWS_DEFAULT_REGION |  docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 }
 
 build-be-prod () {
  #cd /workspace/aws-bootcamp-cruddur-2023/backend-flask/
-  BACKEND_PATH=$THEIA_WORKSPACE_ROOT/backend-flask
+  BACKEND_PATH=$GIT_ROOT/backend-flask
   echo $BACKEND_PATH
   cd $BACKEND_PATH
   docker build -t backend-flask-prod -f Dockerfile.prod .
 }
 
 build-fe-prod () {
-  FRONTEND_REACT_JS_PATH=$THEIA_WORKSPACE_ROOT/frontend-react-js
+  FRONTEND_REACT_JS_PATH=$GIT_ROOT/frontend-react-js
   echo $FRONTEND_REACT_JS_PATH
 
   docker build \
@@ -81,5 +83,9 @@ force-fe-deploy () {
 }
 
 register-task-def () {
-  aws ecs register-task-definition --cli-input-json file://aws/task-definitions/${1}
+  aws ecs register-task-definition --cli-input-json file://${GIT_ROOT}/aws/task-definitions/${1}
+}
+
+ecr-ls-running () {
+  aws ecs describe-tasks --cluster cruddur --output text --query tasks[].containers[].[image] --tasks `aws ecs list-tasks --cluster cruddur --desired-status RUNNING --query taskArns --output text`
 }

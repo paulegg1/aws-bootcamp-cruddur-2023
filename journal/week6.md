@@ -1674,6 +1674,102 @@ Various changes to get the Token refresh working and other JS file changes for t
 
 
 
+# Container Insights - Xray #
+
+##  Xray Container - task definition ##
+
+Add the following to the backend-flask task defintion. This will allow us to launch an xray container daemon container:
+
+```json
+ {
+        "name": "xray",
+        "image": "public.ecr.aws/xray/aws-xray-daemon",
+        "essential": true,
+        "user": 1337,
+        "portMappings": [
+          {
+            "name": "xray",
+            "containerPort": 2000,
+            "protocol": "udp"
+          }
+        ]
+      }
+```
+
+This needs to be added in `"containerDefintions": [ ]` See the file `aws/task-definitions/backend-flask.json` for details.
+
+Once that is done, register the task.  I wrote a new function for this:
+
+```sh
+register-task-def () 
+{ 
+    aws ecs register-task-definition --cli-input-json file://${GIT_ROOT}/aws/task-definitions/${1}
+}
+```
+
+This works as shown:
+
+```sh
+$ register-task-def backend-flask.json
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:us-east-1:540771840545:task-definition/backend-flask:4",
+        "containerDefinitions": [
+            {
+                "name": "xray",
+
+...
+```
+
+BTW: $GIT_ROOT is always the ROOT of the repo.  I've added this now as a `gp env` and also at the start of my functions definitions:
+
+```sh
+export GIT_ROOT=$( git rev-parse --show-toplevel )
+```
+
+This is very handy for "pathing" in shell scripts and files.
+
+##  Xray Container - deploy ##
+
+Make sure you are logged in with :
+
+```sh
+ecr-login
+```
+
+Then deploy the new xray container with our function:
+
+```sh
+force-be-deploy 
+```
+
+This worked just fine and we have an xray container running.
+
+I've written another function to list running containers:
+
+```sh
+ecr-ls-running () {
+  aws ecs describe-tasks --cluster cruddur --output text --query tasks[].containers[].[image] --tasks `aws ecs list-tasks --cluster cruddur --desired-status RUNNING --query taskArns --output text`
+}
+```
+
+Run this:
+
+```sh 
+ ecr-ls-running 
+```
+
+Output should be:
+
+```sh
+$ ecr-ls-running 
+public.ecr.aws/xray/aws-xray-daemon
+None
+540771840545.dkr.ecr.us-east-1.amazonaws.com/backend-flask
+540771840545.dkr.ecr.us-east-1.amazonaws.com/frontend-react-js
+None
+```
+
 
 ## Aliases and Functions ##
 
