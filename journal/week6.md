@@ -1668,7 +1668,9 @@ This all worked.  In fact, I surprised to see that even new messaging worked jus
 
 # Cognito Refresh Token #
 
-Amplify refresh Cognito Token...
+Amplify refresh Cognito Token.
+
+Various changes to get the Token refresh working and other JS file changes for the Token fix - see commit: [f906199 / Finished CheckAuth](https://github.com/paulegg1/aws-bootcamp-cruddur-2023/commit/f906199ede211a12dab19b22f4c35ab050a98122) 
 
 
 

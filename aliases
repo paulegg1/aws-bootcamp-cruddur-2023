@@ -79,3 +79,7 @@ force-fe-deploy () {
   aws ecs update-service --cluster cruddur --service frontend-react-js --task-definition $FE_TASK_DEF --force-new-deployment
 
 }
+
+register-task-def () {
+  aws ecs register-task-definition --cli-input-json file://aws/task-definitions/${1}
+}
