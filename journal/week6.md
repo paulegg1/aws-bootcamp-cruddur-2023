@@ -1846,3 +1846,58 @@ force-be-deploy ()
     aws ecs describe-services --cluster cruddur --services backend-flask --query 'services[0].deployments' --output table
 }
 ```
+
+### More more functions (and docker compose networks!) ###
+
+I've added a function to list Docker networks and show their associated containers:
+
+```sh
+$ docker-net-ls -a
+Containers associated with 99d0d4b0ca27 network are : 
+  -  aws-bootcamp-cruddur-2023-frontend-react-js-1
+  -  dynamodb-local
+  -  aws-bootcamp-cruddur-2023-xray-daemon-1
+  -  aws-bootcamp-cruddur-2023-backend-flask-1
+  -  aws-bootcamp-cruddur-2023-db-1
+Containers associated with 6ba41ea940d7 network are : 
+Containers associated with e408ce11c391 network are : 
+Containers associated with d967f94cada8 network are : 
+```
+
+and
+
+```sh
+$ docker-net-ls 99d0d4b0ca27
+Containers associated with 99d0d4b0ca27 network are : 
+  -  aws-bootcamp-cruddur-2023-frontend-react-js-1
+  -  dynamodb-local
+  -  aws-bootcamp-cruddur-2023-xray-daemon-1
+  -  aws-bootcamp-cruddur-2023-backend-flask-1
+  -  aws-bootcamp-cruddur-2023-db-1
+```
+
+Code is simple and without error checking for now, but it works:
+
+```sh
+docker-net-ls () {
+  if [ $1 == "-a" ]
+  then 
+     for network in $( docker network list --format "{{.ID}}" );
+     do
+      SHORTNAME=$( /usr/bin/docker network list --format "{{.Name}}" --filter name=${network} )
+      echo -e "\e[31mContainers associated with ${network} network are : \e[0m"
+        for i in $( docker inspect ${network} | jq -r '.[].Containers' | jq -r '.[] | .Name' ); 
+        do 
+          echo "  -  ${i}"; 
+        done
+    done
+  else
+    SHORTNAME=$( /usr/bin/docker network list --format "{{.Name}}" --filter name=${1} )
+    echo -e "\e[31mContainers associated with ${1} network are : \e[0m"
+    for i in $( docker inspect 99d0d4b0ca27 | jq -r '.[].Containers' | jq -r '.[] | .Name' ); 
+    do 
+      echo "  -  ${i}"; 
+    done
+  fi
+}
+```

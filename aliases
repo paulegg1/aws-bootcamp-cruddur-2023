@@ -89,3 +89,25 @@ register-task-def () {
 ecr-ls-running () {
   aws ecs describe-tasks --cluster cruddur --output text --query tasks[].containers[].[image] --tasks `aws ecs list-tasks --cluster cruddur --desired-status RUNNING --query taskArns --output text`
 }
+
+docker-net-ls () {
+  if [ $1 == "-a" ]
+  then 
+     for network in $( docker network list --format "{{.ID}}" );
+     do
+      SHORTNAME=$( /usr/bin/docker network list --format "{{.Name}}" --filter name=${network} )
+      echo -e "\e[31mContainers associated with ${network} network are : \e[0m"
+        for i in $( docker inspect ${network} | jq -r '.[].Containers' | jq -r '.[] | .Name' ); 
+        do 
+          echo "  -  ${i}"; 
+        done
+    done
+  else
+    SHORTNAME=$( /usr/bin/docker network list --format "{{.Name}}" --filter name=${1} )
+    echo -e "\e[31mContainers associated with ${1} network are : \e[0m"
+    for i in $( docker inspect 99d0d4b0ca27 | jq -r '.[].Containers' | jq -r '.[] | .Name' ); 
+    do 
+      echo "  -  ${i}"; 
+    done
+  fi
+}
