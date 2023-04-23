@@ -1771,6 +1771,56 @@ None
 ```
 
 
+## ERB template to generate an env file ##
+
+In order to generate a "single-level" environment file (ie: one that doesn't need expansion of other variables to complete values), we used an ERB template to generate a new environment file on demand:
+
+```ruby
+#!/usr/bin/env ruby
+
+
+require 'erb'
+
+template = File.read 'erb/backend-flask.env.erb'
+content = ERB.new(template).result(binding)
+filename = "backend-flask.env"
+puts "Writing ENV to : " + filename
+File.write(filename, content)
+```
+
+The ERB template deals with the expansion of variables:
+
+```erb
+CONNECTION_URL="<%= ENV['CONNECTION_URL'] %>"
+PROD_CONNECTION_URL="<%= ENV['PROD_CONNECTION_URL'] %>"
+FRONTEND_URL=https://3000-<%= ENV['GITPOD_WORKSPACE_ID'] %>.<%= ENV['GITPOD_WORKSPACE_CLUSTER_HOST'] %>
+BACKEND_URL=https://4567-<%= ENV['GITPOD_WORKSPACE_ID'] %>.<%= ENV['GITPOD_WORKSPACE_CLUSTER_HOST'] %>
+OTEL_EXPORTER_OTLP_ENDPOINT="https://api.honeycomb.io"
+OTEL_EXPORTER_OTLP_HEADERS="x-honeycomb-team=<%= ENV['HONEYCOMB_API_KEY'] %>"
+OTEL_SERVICE_NAME="backend-flask"
+AWS_XRAY_URL="*4567-<%= ENV['GITPOD_WORKSPACE_ID'] %>.<%= ENV['GITPOD_WORKSPACE_CLUSTER_HOST'] %>*"
+AWS_XRAY_DAEMON_ADDRESS="xray-daemon:2000"
+AWS_DEFAULT_REGION="<%= ENV['AWS_DEFAULT_REGION'] %>"
+AWS_ACCESS_KEY_ID="<%= ENV['AWS_ACCESS_KEY_ID'] %>"
+AWS_SECRET_ACCESS_KEY="<%= ENV['AWS_SECRET_ACCESS_KEY'] %>"
+ROLLBAR_ACCESS_TOKEN="<%= ENV['ROLLBAR_ACCESS_TOKEN'] %>"
+AWS_COGNITO_USER_POOL_ID="<%= ENV['AWS_COGNITO_USER_POOL_ID'] %>"
+AWS_COGNITO_USER_POOL_CLIENT_ID="<%= ENV['REACT_APP_CLIENT_ID'] %>"
+AWS_ENDPOINT_URL: "http://dynamodb-local:8000"
+```
+
+Running this from the root level works just fine:
+
+```sh
+$ bin/backend/generate-env 
+Writing ENV to : backend-flask.env
+$ more backend-flask.env 
+CONNECTION_URL="postgresql://postgres:password@db:5432/cruddur"
+...
+```
+
+There is a similar erb template for the backend.
+
 ## Aliases and Functions ##
 
 A quick aside.  
