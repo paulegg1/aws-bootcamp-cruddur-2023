@@ -1821,6 +1821,38 @@ CONNECTION_URL="postgresql://postgres:password@db:5432/cruddur"
 
 There is a similar erb template for the backend.
 
+
+# Container Insights #
+
+Add the preconfigured xray container to the task definitions for both backend and frontend:
+
+```json
+...
+    "containerDefinitions": [
+      {
+        "name": "xray",
+        "image": "public.ecr.aws/xray/aws-xray-daemon",
+        "essential": true,
+        "user": "1337",
+        "portMappings": [
+          {
+            "name": "xray",
+            "containerPort": 2000,
+            "protocol": "udp"
+          }
+        ]
+      },
+      ...
+```
+
+Then, re-register the task definitions and re-deploy.  This gives us an xray container on both services.
+
+## Enable in the console ##
+
+Go to the ECR console, clusters, crudder -> Update Cluster and switch the `Use container insights` to ON.
+
+
+
 ## Aliases and Functions ##
 
 A quick aside.  
