@@ -40,6 +40,8 @@ tasks:
   - name: cdk
     before: |
       npm install aws-cdk -g
+      cd thumbing-serverless-cdk
+      npm i
       npm install dotenv
   - name: shell-func
     command: |
