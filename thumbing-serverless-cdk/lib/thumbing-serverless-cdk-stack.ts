@@ -5,7 +5,8 @@ import { Construct } from 'constructs';
 import * as dotenv from 'dotenv';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
-dotenv.config();
+//without this we would need to cp .env.example to .env in the .gitpod.yml
+dotenv.config({path: '.env.example'});
 
 export class ThumbingServerlessCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
