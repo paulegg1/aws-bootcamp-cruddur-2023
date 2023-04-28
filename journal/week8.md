@@ -183,9 +183,7 @@ arn:aws:cloudformation:us-east-1:540771840545:stack/ThumbingServerlessCdkStack/9
 ##  Adding Lambda ##
 
 
-TODO
-
-Note: Added a simple hello world Lambda to get started:
+First, just to test CDK and adding a Lambda I added a simple hello world Lambda to get started:
 
 ```typescript
 exports.handler = function(event, context) {
@@ -227,3 +225,28 @@ arn:aws:cloudformation:us-east-1:540771840545:stack/ThumbingServerlessCdkStack/9
 
 ✨  Total time: 62.96s
 ```
+
+## The real lambda ##
+
+In `aws/lambdas/thumbLambda` is the lambda code for the image processing.
+
+You will need to add the node modules required for the Lambda in that location:
+
+```sh
+npm i sharp
+npm i @aws-cdk/s3-client
+```
+
+That will create the `node_modules` directory and place the dependencies into `package.json`
+
+```json
+...
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.321.1",
+    "sharp": "^0.32.1"
+  }
+...
+```
+
+Next, go back to the thumbing stack and re-run `cdk deploy`
+
