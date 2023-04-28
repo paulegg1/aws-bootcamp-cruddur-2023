@@ -250,3 +250,55 @@ That will create the `node_modules` directory and place the dependencies into `p
 
 Next, go back to the thumbing stack and re-run `cdk deploy`
 
+## sharp for Lambda ##
+
+There are some additional requirements to complete for sharp on Lambda see [here](https://sharp.pixelplumbing.com/install)
+
+It recommends for Lambda:
+
+```sh
+npm install
+rm -rf node_modules/sharp
+SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --arch=x64 --platform=linux --libc=glibc sharp
+```
+
+I wrote a function for this that works from anywhere in the tree and returns you to your original location:
+
+```sh
+rebuild-sharp () {
+  cd ${GIT_ROOT}/thumbing-serverless-cdk
+  npm install
+  rm -rf node_modules/sharp
+  SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --arch=x64 --platform=linux --libc=glibc sharp
+  cd -
+}
+```
+
+As usual, this is in the `aliases` file and will need sourcing.
+
+## Create S3 Event notification to Lambda via CDK ##
+
+To "connect" the S3 bucket to Lambda so that upload (PUT) events trigger the Lambda we add this to the `thumbing-serverless-cdk-stack.ts` file:
+
+```typescript
+  createS3NotifyToLambda(prefix: string, lambda: lambda.IFunction, bucket: s3.IBucket): void {
+    const destination = new s3n.LambdaDestination(lambda);
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED_PUT,
+      destination,
+      {prefix: prefix}
+    )
+  }
+```
+
+Also, in the constructor, so that this gets called:
+
+```typescript
+this.createS3NotifyToLambda(folderInput,lambda,bucket)
+```
+
+Test this with `cdk synth`, review the output and then `cdk deploy`
+
+Once deployed, check the Cloud Formation stacks and also the Lambda in the console - you should see the linked bucket:
+
+![S3 Notification](assets/s3-lambda-not.png)

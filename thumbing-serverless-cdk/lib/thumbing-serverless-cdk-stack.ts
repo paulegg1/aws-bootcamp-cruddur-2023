@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import { Construct } from 'constructs';
 import * as dotenv from 'dotenv';
@@ -22,6 +23,10 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
     const bucket = this.createBucket(bucketName);
     const lambda = this.createLambda(functionPath, bucketName, folderInput, folderOutput);
 
+    // S3 Events
+    this.createS3NotifyToLambda(folderInput,lambda,bucket)
+    
+    
     // REMOVE THIS:
     // example resource
     // const queue = new sqs.Queue(this, 'ThumbingServerlessCdkQueue', {
@@ -55,5 +60,16 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
     });
     return lambdaFunction; 
   }
+
+  // Adds a notification event based on our prefix (original image folder location), PUT type and bucket name
+  createS3NotifyToLambda(prefix: string, lambda: lambda.IFunction, bucket: s3.IBucket): void {
+    const destination = new s3n.LambdaDestination(lambda);
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED_PUT,
+      destination,
+      {prefix: prefix}
+    );
+  }
+
 
 } 
