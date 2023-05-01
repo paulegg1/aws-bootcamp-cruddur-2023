@@ -14,11 +14,12 @@ exports.handler = async (event) => {
 
   const srcBucket = event.Records[0].s3.bucket.name;
   const srcKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
-  console.log('srcBucket',srcBucket)
-  console.log('srcKey',srcKey)
+  console.log('srcBucket',srcBucket);
+  console.log('srcKey',srcKey);
 
   const dstBucket = bucketName;
-  const dstKey = srcKey.replace(folderInput,folderOutput)
+  const origDstKey = srcKey.replace(folderInput,folderOutput)
+  const dstKey= origDstKey.replace("jpg", "png");
   console.log('dstBucket',dstBucket)
   console.log('dstKey',dstKey)
 

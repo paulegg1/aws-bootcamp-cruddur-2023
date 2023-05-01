@@ -326,3 +326,99 @@ importBucket(bucketName: string): s3.IBucket {
 
 Which allows the import of the bucket when the stack is launched.
 
+## Image Upload Shortcut ##
+
+Now that we have a persistent bucket, we can write a quick function to upload / seed our image(s) into the 'original' folder.
+
+```sh
+upload-s3-image () { 
+  echo "aws s3 cp ${GIT_ROOT}/images/${1} s3://assets.cruddur.paulegg.com/avatar/original/"
+  aws s3 cp "${GIT_ROOT}/images/${1}" s3://assets.cruddur.paulegg.com/avatar/original/
+}
+```
+
+Testing:
+
+```sh
+ $ upload-s3-image data.jpg
+aws s3 cp /workspace/aws-bootcamp-cruddur-2023/images/data.jpg s3://assets.cruddur.paulegg.com/avatar/original/
+upload: images/data.jpg to s3://assets.cruddur.paulegg.com/avatar/original/data.jpg
+```
+
+There is also a "clear" function that does this :
+
+```sh
+ $ clear-s3-image data.jpg
+aws s3 rm s3://assets.cruddur.paulegg.com/avatar/original/data.jpg
+aws s3 rm s3://assets.cruddur.paulegg.com/avatar/processed/data.png
+```
+
+## Add Role Policy ##
+
+In order to give the Lambda access to write to the bucket, I create and add a new IAM Policy on the bucket:
+
+```typescript
+  createPolicyBucketAccess(bucketArn: string){
+    const s3ReadWritePolicy = new iam.PolicyStatement({
+      actions: [
+        's3:GetObject',
+        's3:PutObject',
+      ],
+      resources: [
+        `${bucketArn}/*`,
+      ]
+    });
+    return s3ReadWritePolicy;
+  }
+```
+Back in the constructor:
+
+```typescript
+    const s3ReadWritePolicy = this.createPolicyBucketAccess(bucket.bucketArn)
+    lambda.addToRolePolicy(s3ReadWritePolicy);
+```
+
+
+## TESTING ##
+
+At this stage, I am ready to test the upload, the Lambda function triggers on PUT and the image is processed by the lambda and placed into 'processed' !!!
+
+![Lambda test](assets/lambda-image-function-works.png)
+
+The image is a PNG and is 512x512 - success!
+
+```sh
+$ aws s3 ls --recursive s3://assets.cruddur.paulegg.com/avatar/
+2023-05-01 11:51:54          0 avatar/
+2023-05-01 11:52:10          0 avatar/original/
+2023-05-01 13:19:41      71593 avatar/original/data.jpg
+2023-05-01 11:52:17          0 avatar/processed/
+2023-05-01 13:19:44     557213 avatar/processed/data.png
+```
+
+## Adding SNS ##
+
+Now time to implement the SNS Topic.
+
+Added the following calls to the constructor in the .TS file (`thumbing-serverless-cdk-stack.ts`).  With, of course, corresponding function implementations and required imports.  Refer to the file for complete info:
+
+```typescript
+...
+    const snsTopic = this.createSnsTopic(topicName)
+    this.createSnsSubscription(snsTopic,webhookUrl)
+
+    // Create required Policies
+    const snsPublishPolicy = this.createPolicySnSPublish(snsTopic.topicArn)
+
+    // S3 Events
+    this.createS3NotifyToSns(folderOutput,snsTopic,bucket)
+    
+    lambda.addToRolePolicy(snsPublishPolicy);
+...
+```
+
+The SNS Topic is ready, pending confirmation:
+
+![S3 side SNS](assets/s3-notifications.png)
+
+![SNS Topic](assets/sns-topic.png)
