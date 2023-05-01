@@ -22,6 +22,8 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
     const folderInput: string = process.env.THUMBING_FOLDER_INPUT as string;
     const folderOutput: string = process.env.THUMBING_FOLDER_OUTPUT as string;
     const bucket = this.createBucket(bucketName);
+    //bucket.addDirectory(folderInput);
+    //bucket.addDirectory(folderOutput);
     const lambda = this.createLambda(functionPath, bucketName, folderInput, folderOutput);
 
 
