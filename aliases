@@ -118,3 +118,7 @@ docker-net-ls () {
     done
   fi
 }
+
+upload-s3-image () {
+  aws s3 cp file://${GIT_ROOT}/images/${1} aws://assests.cruddur.paulegg.com/avatar/original/
+}

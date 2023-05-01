@@ -302,3 +302,27 @@ Test this with `cdk synth`, review the output and then `cdk deploy`
 Once deployed, check the Cloud Formation stacks and also the Lambda in the console - you should see the linked bucket:
 
 ![S3 Notification](assets/s3-lambda-not.png)
+
+## Change bucket from create to import ##
+
+So that we can 'keep' our bucket but destroy and redeploy our CDK stack, it is necessary to import an existing bucket on `cdk deploy` rather than create/destroy.  I set the `cdk.RemovalPolicy` to `RETAIN` and then I destroyed the stack.  Then I implemented import:
+
+```typescript
+
+...
+    //const bucket = this.createBucket(bucketName);
+    const bucket = this.importBucket(bucketName);
+...
+
+
+importBucket(bucketName: string): s3.IBucket {
+    const bucket = s3.Bucket.fromBucketName(this, 'ThumbingBucket', bucketName);
+    return bucket;
+  }
+
+...
+
+```
+
+Which allows the import of the bucket when the stack is launched.
+

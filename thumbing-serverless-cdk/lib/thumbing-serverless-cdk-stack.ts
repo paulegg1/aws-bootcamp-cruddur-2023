@@ -21,9 +21,8 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
     const functionPath: string = process.env.THUMBING_FUNCTION_PATH as string;
     const folderInput: string = process.env.THUMBING_FOLDER_INPUT as string;
     const folderOutput: string = process.env.THUMBING_FOLDER_OUTPUT as string;
-    const bucket = this.createBucket(bucketName);
-    //bucket.addDirectory(folderInput);
-    //bucket.addDirectory(folderOutput);
+    //const bucket = this.createBucket(bucketName);
+    const bucket = this.importBucket(bucketName);
     const lambda = this.createLambda(functionPath, bucketName, folderInput, folderOutput);
 
 
@@ -33,23 +32,23 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
 
     const s3ReadWritePolicy = this.createPolicyBucketAccess(bucket.bucketArn)
     lambda.addToRolePolicy(s3ReadWritePolicy);
-    
-    // REMOVE THIS:
-    // example resource
-    // const queue = new sqs.Queue(this, 'ThumbingServerlessCdkQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+   
   }
 
-  createBucket(bucketName: string): s3.IBucket {
-    const bucket = new s3.Bucket(this, 'ThumbingBucket', {
-      bucketName: bucketName,
-      removalPolicy: cdk.RemovalPolicy.DESTROY
-
-    });
+  
+  //createBucket(bucketName: string): s3.IBucket {
+  //  const bucket = new s3.Bucket(this, 'ThumbingBucket', {
+  //    bucketName: bucketName,
+  //    removalPolicy: cdk.RemovalPolicy.RETAIN
+  //
+  //  });
+  //  return bucket;
+  //}
+  
+  importBucket(bucketName: string): s3.IBucket {
+    const bucket = s3.Bucket.fromBucketName(this, 'ThumbingBucket', bucketName);
     return bucket;
   }
-
 
   createLambda(functionPath: string, bucketName: string, folderInput: string, folderOutput: string): lambda.IFunction {
     const lambdaFunction = new lambda.Function(this, 'ThumbLambda', {
