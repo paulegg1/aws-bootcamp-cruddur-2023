@@ -120,14 +120,14 @@ docker-net-ls () {
 }
 
 upload-s3-image () { 
-  echo "aws s3 cp ${GIT_ROOT}/images/${1} s3://assets.cruddur.paulegg.com/avatar/original/"
-  aws s3 cp "${GIT_ROOT}/images/${1}" s3://assets.cruddur.paulegg.com/avatar/original/
+  echo "aws s3 cp ${GIT_ROOT}/images/${1} s3://cruddur-paulegg-uploaded-avatars/avatar/original/"
+  aws s3 cp "${GIT_ROOT}/images/${1}" s3://cruddur-paulegg-uploaded-avatars/avatar/original/
 }
 
 clear-s3-image () { 
   PNG=$( echo $1 | sed -e 's/jpg/png/' )
-  echo "aws s3 rm s3://assets.cruddur.paulegg.com/avatar/original/${1}"
+  echo "aws s3 rm s3://cruddur-paulegg-uploaded-avatars/avatar/original/${1}"
   echo "aws s3 rm s3://assets.cruddur.paulegg.com/avatar/processed/${PNG}"
-  aws s3 rm s3://assets.cruddur.paulegg.com/avatar/original/${1}
+  aws s3 rm s3://cruddur-paulegg-uploaded-avatars/avatar/original/${1}
   aws s3 rm s3://assets.cruddur.paulegg.com/avatar/processed/${PNG}
 }

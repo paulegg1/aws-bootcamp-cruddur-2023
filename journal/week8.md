@@ -422,3 +422,22 @@ The SNS Topic is ready, pending confirmation:
 ![S3 side SNS](assets/s3-notifications.png)
 
 ![SNS Topic](assets/sns-topic.png)
+
+## CloudFront ##
+
+I configured CloudFront for the assets bucket (assets.cruddur.paulegg.com) using the AWS console.  CF provides a bucket access policy for the bucket when this is completed.  I've placed the policy in `aws/policies/s3-cloudfront.json`.
+
+Apply it with:
+
+```sh
+aws s3api put-bucket-policy --bucket assets.cruddur.paulegg.com --policy file://s3-cloudfront.json
+```
+My distribution name is:
+
+https://djrx6ekko46j2.cloudfront.net
+
+Try:  https://djrx6ekko46j2.cloudfront.net/avatar/original/data.jpg
+
+Access should be permitted, not denied if all is well.
+
+Need to create a Route 53 CNAME for this.  In R53, create a new record - `assets.cruddur.paulegg.com` and set it to an Alias to CloudFront.  Select the distribution as above (the equivalent in your case).

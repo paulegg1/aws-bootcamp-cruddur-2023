@@ -18,56 +18,61 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
 
     // The code that defines your stack goes here
 
-    
-    const bucketName: string = process.env.THUMBING_BUCKET_NAME as string;
+    const uploadsBucketName: string = process.env.UPLOADS_BUCKET_NAME as string;
+    const assetsBucketName: string = process.env.ASSETS_BUCKET_NAME as string;
+    //const bucketName: string = process.env.THUMBING_BUCKET_NAME as string;
     const functionPath: string = process.env.THUMBING_FUNCTION_PATH as string;
     const folderInput: string = process.env.THUMBING_FOLDER_INPUT as string;
     const folderOutput: string = process.env.THUMBING_FOLDER_OUTPUT as string;
     const webhookUrl: string = process.env.THUMBING_WEBHOOK_URL as string;
     const topicName: string = process.env.THUMBING_TOPIC_NAME as string;
     //const bucket = this.createBucket(bucketName);
-    const bucket = this.importBucket(bucketName);
-    const lambda = this.createLambda(functionPath, bucketName, folderInput, folderOutput);
+    //const bucket = this.importBucket(bucketName);
+    const uploadsBucket = this.createBucket(uploadsBucketName);
+    const assetsBucket = this.importBucket(assetsBucketName);
+
+    const lambda = this.createLambda(functionPath, uploadsBucketName, assetsBucketName, folderInput, folderOutput);
 
     const snsTopic = this.createSnsTopic(topicName)
     this.createSnsSubscription(snsTopic,webhookUrl)
 
     // Create required Policies
-    const s3ReadWritePolicy = this.createPolicyBucketAccess(bucket.bucketArn)
+    const s3UploadsReadWritePolicy = this.createPolicyBucketAccess(uploadsBucket.bucketArn)
+    const s3AssetsReadWritePolicy = this.createPolicyBucketAccess(assetsBucket.bucketArn)
     const snsPublishPolicy = this.createPolicySnSPublish(snsTopic.topicArn)
 
     // S3 Events
-    this.createS3NotifyToLambda(folderInput,lambda,bucket)
-    this.createS3NotifyToSns(folderOutput,snsTopic,bucket)
+    this.createS3NotifyToLambda(folderInput,lambda,uploadsBucket)
+    this.createS3NotifyToSns(folderOutput,snsTopic,assetsBucket)
     
     //Attach required policies
-    lambda.addToRolePolicy(s3ReadWritePolicy);
+    lambda.addToRolePolicy(s3UploadsReadWritePolicy);
+    lambda.addToRolePolicy(s3AssetsReadWritePolicy);
     lambda.addToRolePolicy(snsPublishPolicy);
    
   }
 
   
-  //createBucket(bucketName: string): s3.IBucket {
-  //  const bucket = new s3.Bucket(this, 'ThumbingBucket', {
-  //    bucketName: bucketName,
-  //    removalPolicy: cdk.RemovalPolicy.RETAIN
-  //
-  //  });
-  //  return bucket;
-  //}
+  createBucket(bucketName: string): s3.IBucket {
+    const bucket = new s3.Bucket(this, 'UploadsBucket', {
+      bucketName: bucketName,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+    return bucket;
+  }
   
   importBucket(bucketName: string): s3.IBucket {
-    const bucket = s3.Bucket.fromBucketName(this, 'ThumbingBucket', bucketName);
+    const bucket = s3.Bucket.fromBucketName(this, 'AssetsBucket', bucketName);
     return bucket;
   }
 
-  createLambda(functionPath: string, bucketName: string, folderInput: string, folderOutput: string): lambda.IFunction {
+  createLambda(functionPath: string, uploadsBucketName: string, assetsBucketName: string, folderInput: string, folderOutput: string): lambda.IFunction {
     const lambdaFunction = new lambda.Function(this, 'ThumbLambda', {
       code: lambda.Code.fromAsset(functionPath),
       handler: 'index.handler',
       runtime: lambda.Runtime.NODEJS_18_X,
       environment: {
-        DEST_BUCKET_NAME: bucketName,
+        DEST_BUCKET_NAME: assetsBucketName,
         FOLDER_INPUT: folderInput,
         FOLDER_OUTPUT: folderOutput,
         PROCESS_WIDTH: '512',
