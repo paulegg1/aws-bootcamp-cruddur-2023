@@ -456,3 +456,21 @@ I changed the upload (original) destination to a new bucket with no path expecte
 ```
 
 Testing was successful.
+
+# Working on integration of the user profile page and avatar mtg #
+
+## NOTE on Flask version ##
+
+I started getting this error on a docker up of the backend:
+
+```sh
+AttributeError: type object 'Flask' has no attribute 'before_first_request'. Did you mean: 'got_first_request'?
+```
+
+According to this: (https://github.com/DataDog/dd-trace-py/issues/5671), it appears to be an issue with Flask 2.3.0.  The release notes suggest this decorator has been removed.  As a quick fix, I've edited the requirements.txt and set:
+
+```sh
+flask==2.2.4
+```
+
+This has fixed the issue.
