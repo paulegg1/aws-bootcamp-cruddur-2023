@@ -441,3 +441,18 @@ Try:  https://djrx6ekko46j2.cloudfront.net/avatar/original/data.jpg
 Access should be permitted, not denied if all is well.
 
 Need to create a Route 53 CNAME for this.  In R53, create a new record - `assets.cruddur.paulegg.com` and set it to an Alias to CloudFront.  Select the distribution as above (the equivalent in your case).
+
+## Changes to S3 Buckets ##
+
+I changed the upload (original) destination to a new bucket with no path expected for the original upload location (so, images will be uploaded to `s3://cruddur-paulegg-uploaded-avatars/data.jpg`).  The lambda function needed a small edit to ensure it handled the new location and processed accordingly:
+
+```diff
+   const dstBucket = bucketName;
+-  const origDstKey = srcKey.replace(folderInput,folderOutput)
++  const origDstKey = folderOutput + srcKey
+   const dstKey= origDstKey.replace("jpg", "png");
+   console.log('dstBucket',dstBucket)
+
+```
+
+Testing was successful.

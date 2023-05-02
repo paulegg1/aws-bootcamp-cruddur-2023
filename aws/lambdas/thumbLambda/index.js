@@ -18,7 +18,8 @@ exports.handler = async (event) => {
   console.log('srcKey',srcKey);
 
   const dstBucket = bucketName;
-  const origDstKey = srcKey.replace(folderInput,folderOutput)
+  //const origDstKey = srcKey.replace(folderInput,folderOutput)
+  const origDstKey = folderOutput + srcKey
   const dstKey= origDstKey.replace("jpg", "png");
   console.log('dstBucket',dstBucket)
   console.log('dstKey',dstKey)
