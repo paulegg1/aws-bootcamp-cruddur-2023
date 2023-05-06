@@ -8,6 +8,7 @@ import rollbar
 import rollbar.contrib.flask
 from flask import got_request_exception
 
+
 import watchtower
 import logging
 from time import strftime

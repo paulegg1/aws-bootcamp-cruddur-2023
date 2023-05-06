@@ -13,10 +13,9 @@ class UserActivities:
     else:
       ## removed the stubbed response, now a sql request
       sql = db.template('users','show')
-      results = db.query_array_json(sql,{'handle': user_handle})
+      results = db.query_object_json(sql,{'handle': user_handle})
       model['data'] = results
     return model
-
 
     # (sql,{
     #    'cognito_user_id': cognito_user_id,
