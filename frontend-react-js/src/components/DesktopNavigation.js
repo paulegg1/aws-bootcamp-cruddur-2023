@@ -25,7 +25,9 @@ export default function DesktopNavigation(props) {
       handle="messages" 
       active={props.active} />
     profileLink = <DesktopNavigationLink 
-      url="/@andrewbrown" 
+      // Hack to my ID, also seen done by 'ht3886' in discord thread
+      // need to revisit
+      url="/@Paulegg" 
       name="Profile"
       handle="profile"
       active={props.active} />

@@ -17,6 +17,7 @@ class UserActivities:
       model['data'] = results
     return model
 
+
     # (sql,{
     #    'cognito_user_id': cognito_user_id,
     #    'user_receiver_handle': rev_handle
