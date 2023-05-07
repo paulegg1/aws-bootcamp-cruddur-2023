@@ -45,8 +45,4 @@ tasks:
       cd thumbing-serverless-cdk
       npm i
       npm install dotenv
-  - name: shell-func
-    command: |
-      source "$THEIA_WORKSPACE_ROOT/aliases"
-      ecr-login
       

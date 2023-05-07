@@ -2,6 +2,7 @@ import './ProfileHeading.css';
 import EditProfileButton from '../components/EditProfileButton';
 
 export default function ProfileHeading(props) {
+//  Need to fix this
   const backgroundImage = 'url("https://assets.cruddur.com/banners/banner.jpg")';
   const styles = {
     backgroundImage: backgroundImage,
@@ -12,7 +13,7 @@ export default function ProfileHeading(props) {
   <div className='activity_feed_heading profile_heading'>
     <div className='title'>{props.profile.display_name}</div>
     <div className="cruds_count">{props.profile.cruds_count} Cruds</div>
-    <div class="banner" style={styles} >
+    <div className="banner" style={styles} >
       <div className="avatar">
         <img src="https://assets.cruddur.paulegg.com/avatar/processed/data.png"></img>
       </div>
@@ -24,7 +25,7 @@ export default function ProfileHeading(props) {
       </div>
       <EditProfileButton setPopped={props.setPopped} />
     </div>
-
+    <div className="bio">{props.profile.bio}</div>
   </div>
   );
 }

@@ -131,3 +131,7 @@ clear-s3-image () {
   aws s3 rm s3://cruddur-paulegg-uploaded-avatars/${1}
   aws s3 rm s3://assets.cruddur.paulegg.com/avatar/processed/${PNG}
 }
+
+ls-uploaded-avatars () {
+ aws s3 ls s3://cruddur-paulegg-uploaded-avatars/
+}

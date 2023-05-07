@@ -14,6 +14,7 @@ class UserActivities:
       ## removed the stubbed response, now a sql request
       sql = db.template('users','show')
       results = db.query_object_json(sql,{'handle': user_handle})
+      print('XXX', results)
       model['data'] = results
     return model
 
