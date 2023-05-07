@@ -3,7 +3,7 @@ import EditProfileButton from '../components/EditProfileButton';
 
 export default function ProfileHeading(props) {
 //  Need to fix this
-  const backgroundImage = 'url("https://assets.cruddur.com/banners/banner.jpg")';
+  const backgroundImage = 'url("https://assets.cruddur.paulegg.com/banners/ST.jpeg")';
   const styles = {
     backgroundImage: backgroundImage,
     backgroundSize: 'cover',
@@ -18,8 +18,8 @@ export default function ProfileHeading(props) {
         <img src="https://assets.cruddur.paulegg.com/avatar/processed/data.png"></img>
       </div>
     </div>
-    <div class="info">
-      <div class='id'>
+    <div className="info">
+      <div className='id'>
         <div className="display_name">{props.profile.display_name}</div>
         <div className="handle">@{props.profile.handle}</div>
       </div>
