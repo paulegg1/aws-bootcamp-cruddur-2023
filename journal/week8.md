@@ -608,14 +608,28 @@ The migration scripts took some fiddling, but eventually:
 gitpod /workspace/aws-bootcamp-cruddur-2023/bin/db (main) $ ./migrate 
  SQL STATEMENT-[commit with returning]------
 
+      ALTER TABLE public.users ADD COLUMN bio text;
      {}
-running migration:  16840767124739342_add_bio_column
+running migration:  16840768259190748_add_bio_column
  SQL STATEMENT-[commit with returning]------
 
   UPDATE schema_information
   SET last_successful_run = %(last_successful_run)s
-   {'last_successful_run': '16840767221590047'}
+   {'last_successful_run': '16840768576999626'}
 ```
+
+Here's the table users seen with and without the bio column:
+
+![users table before and after](assets/db_bio_migrate_users.png)
+
+The migrate:
+
+![BIO migrate](assets/sdb_bio_migrate_users_migrate.png)
+
+The rollback
+
+![BIO Rollback](assets/db_bio_migrate_users_rollback.png)
+
 
 
 
