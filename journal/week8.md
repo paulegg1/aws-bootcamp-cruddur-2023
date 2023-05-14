@@ -559,6 +559,43 @@ class UpdateProfile:
     return data
 ```
 
+Next, I created the `ProfileForm.js` and `.css` files. These were taken directly from AB's repo/submission - so there is little point repeating the detail here.  See them in the commit.
+
+The profile form was added to the UserFeedPage.js:
+
+```javascript
+<ProfileForm 
+          profile={profile}
+          popped={poppedProfile} 
+          setPopped={setPoppedProfile} 
+        />
+```
+
+(plus, some path amendments following the jsconfig.json baseUrl change - see below)
+
+Also, added `Popup.css` and imported it at the top of `App.js`
+
+```javascript
+import './components/Popup.css';
+```
+
+Also added the following to replyform.js for the close (although not fully implemented - ready for later)
+
+```diff
+
++  const close = ()=> {
++    console.log('close')
++    //props.setPopped(false)
++  }
+
+...
+
+  if (props.popped === true) {
+     return (
+       <div className="popup_form_wrap">
++      <div className="popup_form_wrap" onClick={close}>
+```
+
 ##  The `prepare` function ##
 
 I wrote a function to run the required seeding on launch of the containers in the development environment.
