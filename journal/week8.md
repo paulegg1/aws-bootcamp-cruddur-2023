@@ -624,7 +624,7 @@ Here's the table users seen with and without the bio column:
 
 The migrate:
 
-![BIO migrate](assets/sdb_bio_migrate_users_migrate.png)
+![BIO migrate](assets/db_bio_migrate_users_migrate.png)
 
 The rollback
 
