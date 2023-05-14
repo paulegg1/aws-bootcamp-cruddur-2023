@@ -596,6 +596,29 @@ Also added the following to replyform.js for the close (although not fully imple
 +      <div className="popup_form_wrap" onClick={close}>
 ```
 
+## DB Migration Scripts ##
+
+Next up is the migration scripts to add the bio column to the database.  See the `bin/generate/migration` python script and the output of the test run in `backend-flask/db/migrations`.
+
+Next, added the DB Migrate and Rollback scripts and amended db.py to include the verbose flag.
+
+The migration scripts took some fiddling, but eventually:
+
+```sh
+gitpod /workspace/aws-bootcamp-cruddur-2023/bin/db (main) $ ./migrate 
+ SQL STATEMENT-[commit with returning]------
+
+     {}
+running migration:  16840767124739342_add_bio_column
+ SQL STATEMENT-[commit with returning]------
+
+  UPDATE schema_information
+  SET last_successful_run = %(last_successful_run)s
+   {'last_successful_run': '16840767221590047'}
+```
+
+
+
 ##  The `prepare` function ##
 
 I wrote a function to run the required seeding on launch of the containers in the development environment.

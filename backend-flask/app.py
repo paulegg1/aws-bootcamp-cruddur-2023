@@ -38,7 +38,7 @@ from services.messages import *
 from services.create_message import *
 from services.show_activity import *
 from services.users_short import *
-#from services.update_profile import *
+from services.update_profile import *
 
 
 # Initialize tracing and an exporter that can send data to Honeycomb
