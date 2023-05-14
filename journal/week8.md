@@ -459,6 +459,171 @@ Testing was successful.
 
 # Working on integration of the user profile page and avatar mtg #
 
+See the commits for the creation of ProfileAvatar.js, ProfileHeading.js and associated CSS.
+
+https://github.com/paulegg1/aws-bootcamp-cruddur-2023/commit/7ca375d49c6af066f8eabb0681df5c7ab1fa85ad
+
+https://github.com/paulegg1/aws-bootcamp-cruddur-2023/commit/a60c041cc45fcae841f3e9c4f30e1e4366aae132
+
+
+Also created EditProfileButton.js and .css.
+
+https://github.com/paulegg1/aws-bootcamp-cruddur-2023/commit/7ca375d49c6af066f8eabb0681df5c7ab1fa85ad
+
+## Profile Form ##
+
+Next, we work on the profile form that launches from the edit profile button.  
+
+First a quick note on the nature of the log buffering for Python Flask that means an edit is required before the contents of the log buffer is flushed to stdout.  From AB's recommendation on this, I added this env var to the backend flask Dockerfile:
+
+```Dockerfile
+ENV PYTHONUNBUFFERED=1
+```
+This really helps with the debugging.
+
+The entrypoint for updating profile is needed, this gets imported into app.py:
+
+```diff
+  from services.users_short import *
++ from services.update_profile import *
+```
+
+Plus of course the decorator, URI `"/api/profile/update"` in app.py, from line 177 onward.
+
+```diff
+@app.route("/api/profile/update", methods=['POST','OPTIONS'])
+@cross_origin()
+def data_update_profile():
+  bio          = request.json.get('bio',None)
+  display_name = request.json.get('display_name',None)
+  access_token = extract_access_token(request.headers)
+  try:
+    claims = cognito_jwt_token.verify(access_token)
+    cognito_user_id = claims['sub']
+    UpdateProfile.run(
+      cognito_user_id=cognito_user_id,
+      bio=bio,
+      display_name=display_name
+    )
+    if model['errors'] is not None:
+      return model['errors'], 422
+    else:
+      return model['data'], 200
+  except TokenVerifyError as e:
+    # unauthenicatied request
+    app.logger.debug(e)
+    return {}, 401
+```
+
+The source file for that (`backend-flask/services/update_profile.py`) needs to exist,
+
+```python
+from lib.db import db
+
+class UpdateProfile:
+  def run(cognito_user_id,bio,display_name):
+    model = {
+      'errors': None,
+      'data': None
+    }
+
+    if display_name == None or len(display_name) < 1:
+      model['errors'] = ['display_name_blank']
+
+    if model['errors']:
+      model['data'] = {
+        'bio': bio,
+        'display_name': display_name
+      }
+    else:
+      handle = UpdateProfile.update_profile(bio,display_name,cognito_user_id)
+      data = UpdateProfile.query_users_short(handle)
+      model['data'] = data
+    return model
+  
+  def update_profile(bio,display_name,cognito_user_id):
+    if bio == None:    
+      bio = ''
+
+    sql = db.template('users','update')
+    handle = db.query_commit(sql,{
+      'cognito_user_id': cognito_user_id,
+      'bio': bio,
+      'display_name': display_name
+    })
+  def query_users_short(handle):
+    sql = db.template('users','short')
+    data = db.query_select_object(sql,{
+      'handle': handle
+    })
+    return data
+```
+
+##  The `prepare` function ##
+
+I wrote a function to run the required seeding on launch of the containers in the development environment.
+
+```sh
+prepare () { 
+  #  An attempt to bring together all required tasks to launch the app
+  ecr-login
+  docker-compose up -d
+  printf "Please confirm that the containers are all running Y/N : "
+  read ANS
+  if [ $ANS == "Y" ] 
+  then
+    CONNECTION_URL=postgresql://postgres:password@localhost:5432/cruddur
+    ${GIT_ROOT}/backend-flask/bin/db/doit-all
+    ${GIT_ROOT}/backend-flask/bin/ddb/schema-load
+    ${GIT_ROOT}/backend-flask/bin/ddb/seed
+  else
+    printf "Exiting, please investigate, use docker-compose to launch containers and re-run the scripts for DB and DDB seeding \n"
+  fi  
+}
+```
+
+Basically, after git pod launch, in a fresh terminal shell all I need to run is `prepare`:
+
+```sh
+gitpod /workspace/aws-bootcamp-cruddur-2023 (main) $ prepare 
+WARNING! Your password will be stored unencrypted in /home/gitpod/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+[+] Running 6/6
+ ✔ Network aws-bootcamp-cruddur-2023_default                Created                                                                        0.1s 
+ ✔ Container aws-bootcamp-cruddur-2023-db-1                 Started                                                                        7.6s 
+ ✔ Container aws-bootcamp-cruddur-2023-xray-daemon-1        Started                                                                        7.8s 
+ ✔ Container aws-bootcamp-cruddur-2023-frontend-react-js-1  Started                                                                        7.9s 
+ ✔ Container dynamodb-local                                 Started                                                                        7.4s 
+ ✔ Container aws-bootcamp-cruddur-2023-backend-flask-1      Started                                                                        7.8s 
+Please confirm that the containers are all running Y/N : Y
+==== db-setup
+== db-drop
+DROP DATABASE
+== db-create
+CREATE DATABASE
+== db-schema-load
+CREATE EXTENSION
+NOTICE:  table "users" does not exist, skipping
+DROP TABLE
+NOTICE:  table "activities" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+== db-seed
+/workspace/aws-bootcamp-cruddur-2023/backend-flask/bin/db/../../db/seed.sql
+INSERT 0 3
+INSERT 0 1
+== db-update-cognito-user-ids
+
+...  snipped ...
+
+{'ConsumedCapacity': {'TableName': 'cruddur-messages', 'CapacityUnits': 1.0}, 'ResponseMetadata': {'RequestId': '5c30b824-ba2e-434a-8e31-b6cff005eedd', 'HTTPStatusCode': 200, 'HTTPHeaders': {'date': 'Sun, 14 May 2023 12:29:41 GMT', 'x-amzn-requestid': '5c30b824-ba2e-434a-8e31-b6cff005eedd', 'content-type': 'application/x-amz-json-1.0', 'x-amz-crc32': '2016288712', 'content-length': '73', 'server': 'Jetty(9.4.48.v20220622)'}, 'RetryAttempts': 0}}
+gitpod /workspace/aws-bootcamp-cruddur-2023 (main) $ 
+```
+
 ## NOTE on Flask version ##
 
 I started getting this error on a docker up of the backend:

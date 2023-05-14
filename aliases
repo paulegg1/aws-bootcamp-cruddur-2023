@@ -135,3 +135,20 @@ clear-s3-image () {
 ls-uploaded-avatars () {
  aws s3 ls s3://cruddur-paulegg-uploaded-avatars/
 }
+
+prepare () { 
+  #  An attempt to bring together all required tasks to launch the app
+  ecr-login
+  docker-compose up -d
+  printf "Please confirm that the containers are all running Y/N : "
+  read ANS
+  if [ $ANS == "Y" ] 
+  then
+    CONNECTION_URL=postgresql://postgres:password@localhost:5432/cruddur
+    ${GIT_ROOT}/backend-flask/bin/db/doit-all
+    ${GIT_ROOT}/backend-flask/bin/ddb/schema-load
+    ${GIT_ROOT}/backend-flask/bin/ddb/seed
+  else
+    printf "Exiting, please investigate, use docker-compose to launch containers and re-run the scripts for DB and DDB seeding \n"
+  fi  
+}
