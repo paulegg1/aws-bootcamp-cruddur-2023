@@ -152,3 +152,5 @@ prepare () {
     printf "Exiting, please investigate, use docker-compose to launch containers and re-run the scripts for DB and DDB seeding \n"
   fi  
 }
+
+alias launch=prepare

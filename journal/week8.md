@@ -624,6 +624,36 @@ INSERT 0 1
 gitpod /workspace/aws-bootcamp-cruddur-2023 (main) $ 
 ```
 
+Maybe I should have called it `launch` !! :) 
+
+```sh
+alias launch=prepare
+```
+
+:) 
+
+## Specific FrontEnd 'src' include ##
+
+As advised by AB, I have added jsconfig.json with the baseurl to include 'src'. This allows the import statements in the FE .js files to refer to the included files as though they were relative path names from the 'src' dir.
+
+ie:
+
+```diff
+- import DesktopSidebar from '../components/DesktopSidebar'
++ import DesktopSidebar from 'components/DesktopSidebar'
+```
+
+The jsconfig looks like this:
+
+```json
+{
+    "compilerOptions": {
+      "baseUrl": "src"
+    },
+    "include": ["src"]
+  }
+```
+
 ## NOTE on Flask version ##
 
 I started getting this error on a docker up of the backend:
