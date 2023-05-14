@@ -490,7 +490,7 @@ The entrypoint for updating profile is needed, this gets imported into app.py:
 
 Plus of course the decorator, URI `"/api/profile/update"` in app.py, from line 177 onward.
 
-```diff
+```python
 @app.route("/api/profile/update", methods=['POST','OPTIONS'])
 @cross_origin()
 def data_update_profile():
