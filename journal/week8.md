@@ -728,6 +728,14 @@ The jsconfig looks like this:
   }
 ```
 
+# Avatar Uploading #
+
+## Setup AWS SDK for JS ##
+
+In order to upload to S3 from client side we need the AWS SDK for JS.
+
+
+
 ## NOTE on Flask version ##
 
 I started getting this error on a docker up of the backend:
