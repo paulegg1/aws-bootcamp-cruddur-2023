@@ -29,6 +29,7 @@ services:
       REACT_APP_AWS_PROJECT_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_COGNITO_REGION: "${AWS_DEFAULT_REGION}"
       REACT_APP_AWS_USER_POOLS_ID: "${REACT_APP_AWS_USER_POOLS_ID}"
+      REACT_APP_API_GATEWAY_ENDPOINT_URL: "https://8mb6appgab.execute-api.us-east-1.amazonaws.com"
       REACT_APP_CLIENT_ID: "${REACT_APP_CLIENT_ID}"
     build: ./frontend-react-js
     ports:

@@ -730,9 +730,86 @@ The jsconfig looks like this:
 
 # Avatar Uploading #
 
-## Setup AWS SDK for JS ##
+## Lambda for avatar upload ##
 
-In order to upload to S3 from client side we need the AWS SDK for JS.
+Create a new lambda, using ruby, in `aws/lambdas/cruddur-upload-avatar`.   With a basic `function.rb` in place, create a bundle:
+
+```sh
+gitpod /workspace/aws-bootcamp-cruddur-2023/aws/lambdas/cruddur-upload-avatar (main) $ bundle init
+Writing new Gemfile to /workspace/aws-bootcamp-cruddur-2023/aws/lambdas/cruddur-upload-avatar/Gemfile
+gitpod /workspace/aws-bootcamp-cruddur-2023/aws/lambdas/cruddur-upload-avatar (main) $ 
+```
+
+This will create a gemfile.  This will allow us to install the required dependencies (ruby gems):
+
+```sh
+$ bundle install
+Fetching gem metadata from https://rubygems.org/.....
+Resolving dependencies...
+Using bundler 2.4.9
+Fetching jwt 2.7.0
+Fetching ox 2.14.16
+Fetching aws-eventstream 1.2.0
+Fetching aws-partitions 1.767.0
+Fetching jmespath 1.6.2
+Installing aws-eventstream 1.2.0
+Installing jmespath 1.6.2
+Installing jwt 2.7.0
+Installing aws-partitions 1.767.0
+Installing ox 2.14.16 with native extensions
+Fetching aws-sigv4 1.5.2
+Installing aws-sigv4 1.5.2
+Fetching aws-sdk-core 3.173.0
+Installing aws-sdk-core 3.173.0
+Fetching aws-sdk-kms 1.64.0
+Installing aws-sdk-kms 1.64.0
+Fetching aws-sdk-s3 1.122.0
+Installing aws-sdk-s3 1.122.0
+Bundle complete! 3 Gemfile dependencies, 10 gems now installed.
+Use `bundle info [gemname]` to see where a bundled gem is installed.
+```
+
+A quick .rb test :
+
+```ruby
+require 'aws-sdk-s3'
+
+s3 = Aws::S3::Resource.new
+bucket_name = ENV["UPLOADS_BUCKET_NAME"]
+object_key = "tst.jpg"
+
+obj = s3.bucket(bucket_name).object(object_key)
+url = obj.presigned_url(:put, expires_in: 60 * 5)
+puts(url)
+```
+
+Works just fine:
+
+
+```sh
+$ bundle exec ruby test.rb
+https://cruddur-paulegg-uploaded-avatars.s3.amazonaws.com/tst.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAX32EDOIQUSFVGXFI%2F20230520%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230520T190523Z&X-Amz-Expires=300&X-Amz-SignedHeaders=host&X-Amz-Signature=c365c56129793ec7e935fe1876bf3586b2ed7e763c9879d26b765e812111628a
+```
+
+Using Thunder Client, I tested this using a PUT.  The image uploaded to the s3 bucket.
+
+Then, using the same code, manually deployed to a lambda function, which also needs the following policy so that it is able to generate the presigned url:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::cruddur-paulegg-uploaded-avatars/*"
+        }
+    ]
+}
+```
+
+The basic testing of this lambda worked.
 
 
 

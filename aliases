@@ -148,6 +148,13 @@ prepare () {
     ${GIT_ROOT}/backend-flask/bin/db/doit-all
     ${GIT_ROOT}/backend-flask/bin/ddb/schema-load
     ${GIT_ROOT}/backend-flask/bin/ddb/seed
+    printf "Please confirm if you want me to run any existing migrations Y/N : "
+       read ANS
+    if [ $ANS == "Y" ] 
+    then 
+      CONNECTION_URL=postgresql://postgres:password@localhost:5432/cruddur
+      ${GIT_ROOT}/bin/db/migrate
+    fi
   else
     printf "Exiting, please investigate, use docker-compose to launch containers and re-run the scripts for DB and DDB seeding \n"
   fi  
